@@ -22,7 +22,7 @@ struct FilterDesc
 	void (*unfilterFunc)(const uint8_t* src, uint8_t* dst, int channels, size_t dataElems);
 };
 
-static FilterDesc g_FilterSplit8Delta = { "-s8dD", Filter_D, UnFilter_D }; // part 6 end
+static FilterDesc g_FilterSplit8Delta = { "-bdelta", Filter_D, UnFilter_D }; // part 6 end
 
 struct TestFile
 {
@@ -56,10 +56,6 @@ struct CompressorConfig
 
 		if (cmp == kCompressionZstd)
 			return 0x90d596; // green
-		if (cmp == kCompressionMeshOpt)
-			return 0xd59096; // red
-		if (cmp == kCompressionMeshOptZstd)
-			return 0x9096d5; // blue
 		return 0;
 	}
 
@@ -101,8 +97,6 @@ static void TestCompressors(size_t testFileCount, TestFile* testFiles)
 {
 	g_Compressors.push_back({kCompressionZstd, &g_FilterSplit8Delta});
 	g_Compressors.push_back({kCompressionZstd, nullptr});
-	g_Compressors.push_back({ kCompressionMeshOpt, nullptr });
-	g_Compressors.push_back({ kCompressionMeshOptZstd, nullptr });
 
 	size_t maxFloats = 0, totalFloats = 0, totalRawFileSize = 0;
 	for (int tfi = 0; tfi < testFileCount; ++tfi)

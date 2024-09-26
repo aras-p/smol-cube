@@ -29,17 +29,6 @@ set(ZSTD_BUILD_STATIC ON)
 set(ZSTD_BUILD_SHARED OFF)
 FetchContent_MakeAvailable(zstd)
 
-# mesh-optimizer
-FetchContent_Declare(
-	meshopt
-	URL https://github.com/zeux/meshoptimizer/archive/refs/tags/v0.21.zip # latest (2024 Jun) at time of writing
-)
-set(MESHOPT_BUILD_DEMO OFF)
-set(MESHOPT_BUILD_GLTFPACK OFF)
-set(MESHOPT_BUILD_SHARED_LIBS OFF)
-FetchContent_MakeAvailable(meshopt)
-
-
 project ("smol-cube")
 
 add_executable (smol-cube
@@ -62,12 +51,10 @@ set_property(TARGET smol-cube PROPERTY CXX_STANDARD 20)
 
 target_include_directories(smol-cube PRIVATE 
 	${zstd_SOURCE_DIR}/lib
-	${meshopt_SOURCE_DIR}/src
 )
 
 target_link_libraries(smol-cube PRIVATE
 	libzstd_static
-	meshoptimizer
 )
 
 target_compile_definitions(smol-cube PRIVATE

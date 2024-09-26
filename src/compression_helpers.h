@@ -8,8 +8,6 @@
 enum CompressionFormat
 {
 	kCompressionZstd = 0,
-	kCompressionMeshOpt,
-	kCompressionMeshOptZstd,
 	kCompressionCount
 };
 size_t compress_calc_bound(size_t srcItemCount, size_t srcItemSize, CompressionFormat format);
