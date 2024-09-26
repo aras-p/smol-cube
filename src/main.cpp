@@ -22,10 +22,7 @@ struct FilterDesc
 	void (*unfilterFunc)(const uint8_t* src, uint8_t* dst, int channels, size_t dataElems);
 };
 
-static FilterDesc g_FilterSplit8 = {"-s8", Filter_Split, UnFilter_Split };
-static FilterDesc g_FilterSplit8AndDeltaDiff = {"-s8dA", Filter_A, UnFilter_A }; // part 3 / part 6 beginning
 static FilterDesc g_FilterSplit8Delta = { "-s8dD", Filter_D, UnFilter_D }; // part 6 end
-static FilterDesc g_FilterSplit8DeltaOpt = { "-s8dH", Filter_H, UnFilter_H };
 
 struct TestFile
 {
@@ -49,9 +46,7 @@ struct CompressorConfig
 	}
 	const char* GetShapeString() const
 	{
-		if (filter == &g_FilterSplit8DeltaOpt) return "'circle', pointSize: 4";
 		if (filter == &g_FilterSplit8Delta) return "'circle'";
-		if (filter == &g_FilterSplit8AndDeltaDiff) return "{type:'square', rotation: 45}, lineDashStyle: [4, 4]";
 		if (filter == nullptr) return "'circle', lineDashStyle: [4, 2], pointSize: 4";
 		return "'circle'";
 	}
@@ -59,11 +54,12 @@ struct CompressorConfig
 	{
 		// https://www.w3schools.com/colors/colors_picker.asp
 
-		bool faded = true; // filter != &g_FilterSplit8DeltaOpt;
 		if (cmp == kCompressionZstd)
-		{
-			return faded ? 0x90d596 : 0x0c9618; // green
-		}
+			return 0x90d596; // green
+		if (cmp == kCompressionMeshOpt)
+			return 0xd59096; // red
+		if (cmp == kCompressionMeshOptZstd)
+			return 0x9096d5; // blue
 		return 0;
 	}
 
@@ -103,12 +99,10 @@ static std::vector<CompressorConfig> g_Compressors;
 
 static void TestCompressors(size_t testFileCount, TestFile* testFiles)
 {
-	g_Compressors.push_back({kCompressionZstd, &g_FilterSplit8DeltaOpt});
 	g_Compressors.push_back({kCompressionZstd, &g_FilterSplit8Delta});
-	g_Compressors.push_back({kCompressionZstd, &g_FilterSplit8AndDeltaDiff});
-    g_Compressors.push_back({kCompressionZstd, &g_FilterSplit8});
 	g_Compressors.push_back({kCompressionZstd, nullptr});
-
+	g_Compressors.push_back({ kCompressionMeshOpt, nullptr });
+	g_Compressors.push_back({ kCompressionMeshOptZstd, nullptr });
 
 	size_t maxFloats = 0, totalFloats = 0, totalRawFileSize = 0;
 	for (int tfi = 0; tfi < testFileCount; ++tfi)
@@ -320,7 +314,7 @@ static void TestCompressors(size_t testFileCount, TestFile* testFiles)
 		fprintf(fout, "'%02x%02x%02x'%s", (col >> 16)&0xFF, (col >> 8)&0xFF, col&0xFF, ic== g_Compressors.size()-1?"":",");
 	}
 	fprintf(fout, "],\n");
-	fprintf(fout, "hAxis: {title: 'Compression GB/s', logScale: true, viewWindow: {min:0.02, max:6.0}},\n");
+	fprintf(fout, "hAxis: {title: 'Compression GB/s', logScale: true, viewWindow: {min:0.01, max:2.0}},\n");
 	fprintf(fout, "vAxis: {title: 'Ratio', viewWindow: {min:1.0, max:%.1f}},\n", std::ceil(maxRatio));
 	fprintf(fout, "chartArea: {left:60, right:10, top:50, bottom:50},\n");
 	fprintf(fout, "legend: {position: 'top'},\n");
@@ -331,7 +325,7 @@ static void TestCompressors(size_t testFileCount, TestFile* testFiles)
 	fprintf(fout, "options.title = titleDec;\n");
 	fprintf(fout, "options.hAxis.title = 'Decompression GB/s';\n");
 	fprintf(fout, "options.hAxis.viewWindow.min = 0.5;\n");
-	fprintf(fout, "options.hAxis.viewWindow.max = 32.0;\n");
+	fprintf(fout, "options.hAxis.viewWindow.max = 15.0;\n");
 	fprintf(fout, "var chartDec = new google.visualization.ScatterChart(document.getElementById('chart_dec'));\n");
 	fprintf(fout, "chartDec.draw(dataDec, options);\n");
 	fprintf(fout, "}\n");
