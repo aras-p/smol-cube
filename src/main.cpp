@@ -343,34 +343,27 @@ static size_t GetFileSize(const char* path)
 
 static bool ReadCubeTestFile(TestFile& tf)
 {
-	smol_cube_lut* lut_3d;
-	smol_cube_lut* lut_1d;
-	smol_cube_result res = smol_cube_parse_cube_file(tf.path, lut_3d, lut_1d);
-	if (res != smol_cube_result::Ok)
-		return false;
+	smol_cube_lut* lut_3d = nullptr;
+	smol_cube_lut* lut_1d = nullptr;
+	smol_cube_result res = smol_cube_parse_resolve_cube_file(tf.path, lut_3d, lut_1d);
 
-	//@TODO: combined 3d + 1d?
+	tf.channels = 3;
+
 	if (lut_3d)
 	{
-		tf.channels = 3;
-		tf.fileData.resize(lut_3d->size_x * lut_3d->size_y * lut_3d->size_z * tf.channels);
-		memcpy(tf.fileData.data(), lut_3d->data, tf.fileData.size() * sizeof(tf.fileData[0]));
+		tf.fileData.insert(tf.fileData.end(), (const float*)lut_3d->data, ((const float*)lut_3d->data) + lut_3d->size_x * lut_3d->size_y * lut_3d->size_z * tf.channels);
 		delete[] lut_3d->data;
 		delete lut_3d;
-		return true;
 	}
 
 	if (lut_1d)
 	{
-		tf.channels = 3;
-		tf.fileData.resize(lut_1d->size_x * tf.channels);
-		memcpy(tf.fileData.data(), lut_1d->data, tf.fileData.size() * sizeof(tf.fileData[0]));
+		tf.fileData.insert(tf.fileData.end(), (const float*)lut_1d->data, ((const float*)lut_1d->data) + lut_1d->size_x * tf.channels);
 		delete[] lut_1d->data;
 		delete lut_1d;
-		return true;
 	}
 
-	return false;
+	return res == smol_cube_result::Ok;
 }
 
 int main()

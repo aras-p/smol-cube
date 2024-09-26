@@ -65,7 +65,7 @@
 // - u32[dimension]: dimensions
 // - data
 
-smol_cube_result smol_cube_parse_cube_file(const char* path, smol_cube_lut*& r_3dlut, smol_cube_lut*& r_1dlut)
+smol_cube_result smol_cube_parse_resolve_cube_file(const char* path, smol_cube_lut*& r_3dlut, smol_cube_lut*& r_1dlut)
 {
     r_3dlut = nullptr;
     r_1dlut = nullptr;
@@ -110,8 +110,8 @@ smol_cube_result smol_cube_parse_cube_file(const char* path, smol_cube_lut*& r_3
                     .dimension = 1,
                     .data_type = smol_cube_data_type::Float,
                     .size_x = uint32_t(dim_1d),
-                    .size_y = uint32_t(dim_1d),
-                    .size_z = uint32_t(dim_1d),
+                    .size_y = 1,
+                    .size_z = 1,
                     .data = new float[dim_1d * 3]
                 };
             }

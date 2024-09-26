@@ -24,4 +24,4 @@ struct smol_cube_lut
 	void* data;
 };
 
-smol_cube_result smol_cube_parse_cube_file(const char* path, smol_cube_lut*& r_3dlut, smol_cube_lut*& r_1dlut);
+smol_cube_result smol_cube_parse_resolve_cube_file(const char* path, smol_cube_lut*& r_3dlut, smol_cube_lut*& r_1dlut);
