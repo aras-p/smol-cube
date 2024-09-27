@@ -113,22 +113,33 @@ int main(int argc, const char** argv)
 			else
 			{
 				size_t cmp_index = 0;
+				smcube_lut rtrip_1d, rtrip_3d;
 				if (lut1d.data)
 				{
-					if (!are_luts_equal(lut1d, smcube_get_file_lut(fh, cmp_index)))
+					rtrip_1d = smcube_get_file_lut(fh, cmp_index++);
+					if (!are_luts_equal(lut1d, rtrip_1d))
 					{
 						printf("ERROR: smcube file '%s' 1D LUT did not roundtrip\n", output_file.c_str());
+						exit_code = 1;
 					}
-					++cmp_index;
 				}
 				if (lut3d.data)
 				{
-					if (!are_luts_equal(lut3d, smcube_get_file_lut(fh, cmp_index)))
+					rtrip_3d = smcube_get_file_lut(fh, cmp_index++);
+					if (!are_luts_equal(lut3d, rtrip_3d))
 					{
 						printf("ERROR: smcube file '%s' 3D LUT did not roundtrip\n", output_file.c_str());
+						exit_code = 1;
 					}
 					++cmp_index;
 				}
+
+				output_file = input_file.substr(0, last_dot_pos) + "2.cube";
+				if (verbose)
+				{
+					printf("- Output roundtrip file '%s'\n", output_file.c_str());
+				}
+				smcube_save_to_resolve_cube_file(output_file.c_str(), rtrip_3d, rtrip_1d);
 			}
 			smcube_close_file(fh);
 		}

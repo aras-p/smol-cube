@@ -37,6 +37,7 @@ smcube_result smcube_write_file(const char* path, size_t lut_count, const smcube
 
 smcube_result smcube_read_file(const char* path, smcube_file_handle*& r_file);
 void smcube_close_file(smcube_file_handle* handle);
+
 const char* smcube_get_file_title(const smcube_file_handle* handle);
 const char* smcube_get_file_comment(const smcube_file_handle* handle);
 size_t smcube_get_file_lut_count(const smcube_file_handle* handle);

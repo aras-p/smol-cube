@@ -12,6 +12,7 @@
         "--verbose",
         "--roundtrip",
         "tests/luts/synthetic/shaper_3d.cube",
+        "tests/luts/tinyglade/LUNA_COLOR.cube",
         "\"tests/luts/davinci/LMT ACES v0.1.1.cube\""
       ]
     }
