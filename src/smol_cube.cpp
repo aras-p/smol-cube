@@ -260,18 +260,18 @@ static void UnFilterByteDelta(const uint8_t* src, uint8_t* dst, int channels, si
 // - u32x3: dimensions x, y, z
 // - data
 
-size_t smol_cube_data_type_size(smol_cube_data_type type)
+size_t smcube_data_type_size(smcube_data_type type)
 {
     switch (type) {
-    case smol_cube_data_type::Float32: return 4;
-    case smol_cube_data_type::Float16: return 2;
+    case smcube_data_type::Float32: return 4;
+    case smcube_data_type::Float16: return 2;
     default: assert(false); return 0;
     }
 }
 
-size_t smol_cube_lut_data_size(const smol_cube_lut& lut)
+size_t smcube_lut_data_size(const smcube_lut& lut)
 {
-    size_t item_size = smol_cube_data_type_size(lut.data_type) * lut.channels;
+    size_t item_size = smcube_data_type_size(lut.data_type) * lut.channels;
     size_t item_count = 1;
     if (lut.dimension >= 1) item_count *= lut.size_x;
     if (lut.dimension >= 2) item_count *= lut.size_y;
@@ -279,7 +279,7 @@ size_t smol_cube_lut_data_size(const smol_cube_lut& lut)
     return item_count * item_size;
 }
 
-struct smol_cube_file_alut_header
+struct smcube_file_alut_header
 {
     uint32_t channels;
     uint32_t dimension;
@@ -289,23 +289,23 @@ struct smol_cube_file_alut_header
     uint32_t size_y;
     uint32_t size_z;
 };
-static_assert(sizeof(smol_cube_file_alut_header) == 28, "Unexpected smol_cube_file_alut_header size");
+static_assert(sizeof(smcube_file_alut_header) == 28, "Unexpected smcube_file_alut_header size");
 
-enum class smol_cube_data_filter : uint32_t
+enum class smcube_data_filter : uint32_t
 {
     None = 0,
     ByteDelta,
     FilterCount
 };
 
-smol_cube_result smol_cube_write_file(const char* path, size_t lut_count, const smol_cube_lut* luts, bool use_filter, const char* title, const char* comment)
+smcube_result smcube_write_file(const char* path, size_t lut_count, const smcube_lut* luts, bool use_filter, const char* title, const char* comment)
 {
     if (path == nullptr || lut_count == 0 || luts == nullptr)
-        return smol_cube_result::InvalidArgument;
+        return smcube_result::InvalidArgument;
 
     FILE* f = fopen(path, "wb");
     if (f == nullptr)
-        return smol_cube_result::FileAccessError;
+        return smcube_result::FileAccessError;
 
     fwrite("SML1", 1, 4, f);
     if (title != nullptr && title[0] != 0)
@@ -324,14 +324,14 @@ smol_cube_result smol_cube_write_file(const char* path, size_t lut_count, const 
     }
     for (size_t i = 0; i < lut_count; ++i)
     {
-        const smol_cube_lut& lut = luts[i];
+        const smcube_lut& lut = luts[i];
         fwrite("ALut", 1, 4, f);
-        const uint64_t data_item_len = lut.channels * smol_cube_data_type_size(lut.data_type);
+        const uint64_t data_item_len = lut.channels * smcube_data_type_size(lut.data_type);
         const uint64_t data_items = lut.size_x * lut.size_y * lut.size_z;
         const uint64_t data_size = data_item_len * data_items;
-        const uint64_t chunk_len = sizeof(smol_cube_file_alut_header) + data_size;
+        const uint64_t chunk_len = sizeof(smcube_file_alut_header) + data_size;
         fwrite(&chunk_len, sizeof(chunk_len), 1, f);
-        smol_cube_file_alut_header head;
+        smcube_file_alut_header head;
         head.channels = lut.channels;
         head.dimension = lut.dimension;
         head.data_type = uint32_t(lut.data_type);
@@ -353,19 +353,47 @@ smol_cube_result smol_cube_write_file(const char* path, size_t lut_count, const 
     }
 
     fclose(f);
-    return smol_cube_result::Ok;
+    return smcube_result::Ok;
 }
 
-struct smol_cube_file_handle
+struct smcube_file_handle
 {
     uint8_t* file_data = nullptr;
     size_t file_data_size = 0;
     std::string title;
     std::string comment;
-    std::vector<smol_cube_lut> luts;
+    std::vector<smcube_lut> luts;
 };
 
-static smol_cube_result cleanup_and_error(smol_cube_result res, smol_cube_file_handle*& r_file)
+const char* smcube_get_file_title(const smcube_file_handle* handle)
+{
+    if (handle == nullptr)
+        return "";
+    return handle->title.c_str();
+}
+
+const char* smcube_get_file_comment(const smcube_file_handle* handle)
+{
+    if (handle == nullptr)
+        return "";
+    return handle->comment.c_str();
+}
+
+size_t smcube_get_file_lut_count(const smcube_file_handle* handle)
+{
+    if (handle == nullptr)
+        return 0;
+    return handle->luts.size();
+}
+
+smcube_lut smcube_get_file_lut(const smcube_file_handle* handle, size_t index)
+{
+    if (handle == nullptr || index >= handle->luts.size())
+        return smcube_lut();
+    return handle->luts[index];
+}
+
+static smcube_result cleanup_and_error(smcube_result res, smcube_file_handle*& r_file)
 {
     if (r_file)
     {
@@ -379,15 +407,15 @@ static smol_cube_result cleanup_and_error(smol_cube_result res, smol_cube_file_h
     return res;
 }
 
-smol_cube_result smol_cube_read_file(const char* path, smol_cube_file_handle*& r_file)
+smcube_result smcube_read_file(const char* path, smcube_file_handle*& r_file)
 {
     if (path == nullptr || r_file != nullptr)
-        return smol_cube_result::InvalidArgument;
+        return smcube_result::InvalidArgument;
 
     r_file = nullptr;
     FILE* f = fopen(path, "rb");
     if (f == nullptr)
-        return smol_cube_result::FileAccessError;
+        return smcube_result::FileAccessError;
 
     fseek(f, 0, SEEK_END);
     int file_size = ftell(f);
@@ -395,17 +423,17 @@ smol_cube_result smol_cube_read_file(const char* path, smol_cube_file_handle*& r
     if (file_size < 4)
     {
         fclose(f);
-        return cleanup_and_error(smol_cube_result::InvalidHeaderData, r_file);
+        return cleanup_and_error(smcube_result::InvalidHeaderData, r_file);
     }
 
-    r_file = new smol_cube_file_handle();
+    r_file = new smcube_file_handle();
     r_file->file_data_size = file_size;
     r_file->file_data = new uint8_t[file_size];
     fread(r_file->file_data, 1, file_size, f);
     fclose(f);
 
     if (memcmp(r_file->file_data, "SML1", 4) != 0)
-        return cleanup_and_error(smol_cube_result::InvalidHeaderData, r_file);
+        return cleanup_and_error(smcube_result::InvalidHeaderData, r_file);
     // parse chunks
     size_t offset = 4;
     while (offset + 12 < r_file->file_data_size)
@@ -414,7 +442,7 @@ smol_cube_result smol_cube_read_file(const char* path, smol_cube_file_handle*& r
         uint64_t chunk_len;
         memcpy(&chunk_len, r_file->file_data + offset + 4, 8);
         if (offset + 12 + chunk_len > r_file->file_data_size)
-            return cleanup_and_error(smol_cube_result::InvalidContentData, r_file);
+            return cleanup_and_error(smcube_result::InvalidContentData, r_file);
         if (memcmp(r_file->file_data + offset, "Titl", 4) == 0 && chunk_len > 0)
         {
             const char* str_ptr = (const char*)r_file->file_data + offset + 12;
@@ -425,39 +453,39 @@ smol_cube_result smol_cube_read_file(const char* path, smol_cube_file_handle*& r
             const char* str_ptr = (const char*)r_file->file_data + offset + 12;
             r_file->comment = std::string(str_ptr, str_ptr + chunk_len);
         }
-        if (memcmp(r_file->file_data + offset, "ALut", 4) == 0 && chunk_len > sizeof(smol_cube_file_alut_header))
+        if (memcmp(r_file->file_data + offset, "ALut", 4) == 0 && chunk_len > sizeof(smcube_file_alut_header))
         {
-            smol_cube_file_alut_header head;
+            smcube_file_alut_header head;
             memcpy(&head, r_file->file_data + offset + 12, sizeof(head));
 
             // validate lut header
             if (head.channels < 1 || head.channels > 4 ||
                 head.dimension < 1 || head.dimension > 3 ||
-                head.data_type >= uint32_t(smol_cube_data_type::DataTypeCount) ||
-                head.filter >= uint32_t(smol_cube_data_filter::FilterCount) ||
+                head.data_type >= uint32_t(smcube_data_type::DataTypeCount) ||
+                head.filter >= uint32_t(smcube_data_filter::FilterCount) ||
                 head.size_x > 65536 || head.size_y > 65536 || head.size_z > 65536)
             {
-                return cleanup_and_error(smol_cube_result::InvalidContentData, r_file);
+                return cleanup_and_error(smcube_result::InvalidContentData, r_file);
             }
 
-            smol_cube_lut lut;
+            smcube_lut lut;
             lut.channels = head.channels;
             lut.dimension = head.dimension;
-            lut.data_type = smol_cube_data_type(head.data_type);
+            lut.data_type = smcube_data_type(head.data_type);
             lut.size_x = head.size_x;
             lut.size_y = head.size_y;
             lut.size_z = head.size_z;
-            size_t lut_data_size = smol_cube_lut_data_size(lut);
-            if (chunk_len - sizeof(smol_cube_file_alut_header) != lut_data_size)
-                return cleanup_and_error(smol_cube_result::InvalidContentData, r_file);
+            size_t lut_data_size = smcube_lut_data_size(lut);
+            if (chunk_len - sizeof(smcube_file_alut_header) != lut_data_size)
+                return cleanup_and_error(smcube_result::InvalidContentData, r_file);
 
             // point to file data
-            lut.data = r_file->file_data + offset + 12 + sizeof(smol_cube_file_alut_header);
+            lut.data = r_file->file_data + offset + 12 + sizeof(smcube_file_alut_header);
 
             // un-filter data if needed
-            if (head.filter == uint32_t(smol_cube_data_filter::ByteDelta))
+            if (head.filter == uint32_t(smcube_data_filter::ByteDelta))
             {
-                size_t lut_item_size = smol_cube_data_type_size(lut.data_type) * lut.channels;
+                size_t lut_item_size = smcube_data_type_size(lut.data_type) * lut.channels;
                 uint8_t* tmp = new uint8_t[lut_data_size];
                 UnFilterByteDelta((const uint8_t*)lut.data, tmp, int(lut_item_size), lut_data_size / lut_item_size);
                 memcpy(lut.data, tmp, lut_data_size);
@@ -471,10 +499,10 @@ smol_cube_result smol_cube_read_file(const char* path, smol_cube_file_handle*& r
         offset += 12 + chunk_len;
     }
 
-    return smol_cube_result::Ok;
+    return smcube_result::Ok;
 }
 
-void smol_cube_close_file(smol_cube_file_handle* handle)
+void smcube_close_file(smcube_file_handle* handle)
 {
     if (handle)
         delete[] handle->file_data;
@@ -482,14 +510,14 @@ void smol_cube_close_file(smol_cube_file_handle* handle)
 }
 
 
-smol_cube_result smol_cube_parse_resolve_cube_file(const char* path, smol_cube_lut& r_3dlut, smol_cube_lut& r_1dlut)
+smcube_result smcube_load_from_resolve_cube_file(const char* path, smcube_lut& r_3dlut, smcube_lut& r_1dlut)
 {
     if (path == nullptr || r_3dlut.data != nullptr || r_1dlut.data != nullptr)
-        return smol_cube_result::InvalidArgument;
+        return smcube_result::InvalidArgument;
 
     FILE* f = fopen(path, "rb");
     if (f == nullptr)
-        return smol_cube_result::FileAccessError;
+        return smcube_result::FileAccessError;
 
     char buf[1000];
 
@@ -507,24 +535,24 @@ smol_cube_result smol_cube_parse_resolve_cube_file(const char* path, smol_cube_l
             if (dim_1d < 0 || dim_1d > 65536)
             {
                 fclose(f);
-                return smol_cube_result::InvalidHeaderData;
+                return smcube_result::InvalidHeaderData;
             }
             if (dim_3d < 0 || dim_3d > 4096)
             {
                 fclose(f);
-                return smol_cube_result::InvalidHeaderData;
+                return smcube_result::InvalidHeaderData;
             }
             if (dim_1d == 0 && dim_3d == 0)
             {
                 fclose(f);
-                return smol_cube_result::InvalidHeaderData;
+                return smcube_result::InvalidHeaderData;
             }
 
             if (dim_1d > 0)
             {
                 r_1dlut.channels = 3;
                 r_1dlut.dimension = 1;
-                r_1dlut.data_type = smol_cube_data_type::Float32;
+                r_1dlut.data_type = smcube_data_type::Float32;
                 r_1dlut.size_x = uint32_t(dim_1d);
                 r_1dlut.size_y = 1;
                 r_1dlut.size_z = 1;
@@ -534,7 +562,7 @@ smol_cube_result smol_cube_parse_resolve_cube_file(const char* path, smol_cube_l
             {
                 r_3dlut.channels = 3;
                 r_3dlut.dimension = 3;
-                r_3dlut.data_type = smol_cube_data_type::Float32;
+                r_3dlut.data_type = smcube_data_type::Float32;
                 r_3dlut.size_x = uint32_t(dim_3d);
                 r_3dlut.size_y = uint32_t(dim_3d);
                 r_3dlut.size_z = uint32_t(dim_3d);
@@ -575,7 +603,7 @@ smol_cube_result smol_cube_parse_resolve_cube_file(const char* path, smol_cube_l
                     if (r_1dlut.data) delete[] r_1dlut.data; r_1dlut.data = nullptr;
                     if (r_3dlut.data) delete[] r_3dlut.data; r_3dlut.data = nullptr;
                     fclose(f);
-                    return smol_cube_result::InvalidContentData;
+                    return smcube_result::InvalidContentData;
                 }
             }
         }
@@ -587,7 +615,66 @@ smol_cube_result smol_cube_parse_resolve_cube_file(const char* path, smol_cube_l
     {
         if (r_1dlut.data) delete[] r_1dlut.data; r_1dlut.data = nullptr;
         if (r_3dlut.data) delete[] r_3dlut.data; r_3dlut.data = nullptr;
-        return smol_cube_result::InvalidContentData;
+        return smcube_result::InvalidContentData;
     }
-    return smol_cube_result::Ok;
+    return smcube_result::Ok;
+}
+
+smcube_result smcube_save_to_resolve_cube_file(const char* path, const smcube_lut& lut3d, const smcube_lut& lut1d)
+{
+    // argument checks
+    if (path == nullptr || (lut3d.data == nullptr && lut1d.data == nullptr))
+        return smcube_result::InvalidArgument;
+    if (lut1d.data)
+    {
+        if (lut1d.channels != 3 || lut1d.data_type != smcube_data_type::Float32 || lut1d.dimension != 1)
+            return smcube_result::InvalidArgument;
+    }
+    if (lut3d.data)
+    {
+        if (lut3d.size_x != lut3d.size_y || lut3d.size_y != lut3d.size_z || lut3d.size_x != lut3d.size_z)
+            return smcube_result::InvalidArgument;
+        if (lut3d.channels != 3 || lut3d.data_type != smcube_data_type::Float32 || lut3d.dimension != 3)
+            return smcube_result::InvalidArgument;
+    }
+
+    FILE* f = fopen(path, "wb");
+    if (f == nullptr)
+        return smcube_result::FileAccessError;
+
+    // write header
+    fprintf(f, "# written by smol-cube\n");
+    if (lut1d.data != nullptr)
+    {
+        fprintf(f, "LUT_1D_SIZE %i\n", lut1d.size_x);
+    }
+    if (lut3d.data != nullptr)
+    {
+        fprintf(f, "LUT_3D_SIZE %i\n", lut3d.size_x);
+    }
+
+    // write data for 1d/shaper lut
+    if (lut1d.data)
+    {
+        const float* data = (const float*)lut1d.data;
+        for (int i = 0; i < lut1d.size_x; ++i)
+        {
+            fprintf(f, "%f %f %f\n", data[0], data[1], data[2]);
+            data += 3;
+        }
+    }
+    // write data for 3d lut
+    if (lut3d.data)
+    {
+        const float* data = (const float*)lut3d.data;
+        for (int i = 0; i < lut3d.size_x * lut3d.size_y * lut3d.size_z; ++i)
+        {
+            fprintf(f, "%f %f %f\n", data[0], data[1], data[2]);
+            data += 3;
+        }
+    }
+
+    fclose(f);
+
+    return smcube_result::Ok;
 }

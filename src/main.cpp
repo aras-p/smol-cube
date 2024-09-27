@@ -20,6 +20,18 @@ stm_setup();
 {"../../../tests/luts/tinyglade/Sam_Kolder.cube", 3},
 */
 
+static bool are_luts_equal(const smcube_lut& la, const smcube_lut& lb)
+{
+	if (la.channels != lb.channels) return false;
+	if (la.dimension != lb.dimension) return false;
+	if (la.data_type != lb.data_type) return false;
+	if (la.size_x != lb.size_x) return false;
+	if (la.size_y != lb.size_y) return false;
+	if (la.size_z != lb.size_z) return false;
+	if (memcmp(la.data, lb.data, smcube_lut_data_size(la)) != 0) return false;
+	return true;
+}
+
 int main(int argc, const char** argv)
 {
 	argh::parser args(argc, argv);
@@ -38,9 +50,9 @@ int main(int argc, const char** argv)
 	{
 		// read input file
 		const std::string& input_file = input_files[idx];
-		smol_cube_lut lut3d, lut1d;
-		smol_cube_result res = smol_cube_parse_resolve_cube_file(input_file.c_str(), lut3d, lut1d);
-		if (res != smol_cube_result::Ok)
+		smcube_lut lut3d, lut1d;
+		smcube_result res = smcube_load_from_resolve_cube_file(input_file.c_str(), lut3d, lut1d);
+		if (res != smcube_result::Ok)
 		{
 			printf("ERROR: failed to read input file '%s' (error %i)\n", input_file.c_str(), int(res));
 			exit_code = 1;
@@ -75,33 +87,54 @@ int main(int argc, const char** argv)
 			printf("- Output file '%s'\n", output_file.c_str());
 		}
 
-		std::vector<smol_cube_lut> output_luts;
+		std::vector<smcube_lut> output_luts;
 		if (lut1d.data)
 			output_luts.push_back(lut1d);
 		if (lut3d.data)
 			output_luts.push_back(lut3d);
-		res = smol_cube_write_file(output_file.c_str(), output_luts.size(), output_luts.data(), true, "Test", "Foobar");
-		if (res != smol_cube_result::Ok)
+		res = smcube_write_file(output_file.c_str(), output_luts.size(), output_luts.data(), true, "Test", "Foobar");
+		if (res != smcube_result::Ok)
 		{
 			printf("ERROR: failed to write output file '%s' (error %i)\n", output_file.c_str(), int(res));
 			exit_code = 1;
 		}
 
-		if (lut3d.data) delete[] lut3d.data;
-		if (lut1d.data) delete[] lut1d.data;
 
 		// read the written smol-cube file
 		if (roundtrip)
 		{
-			smol_cube_file_handle* fh = nullptr;
-			res = smol_cube_read_file(output_file.c_str(), fh);
-			if (res != smol_cube_result::Ok)
+			smcube_file_handle* fh = nullptr;
+			res = smcube_read_file(output_file.c_str(), fh);
+			if (res != smcube_result::Ok)
 			{
 				printf("ERROR: failed to read written smcube file '%s' (error %i)\n", output_file.c_str(), int(res));
 				exit_code = 1;
 			}
-			smol_cube_close_file(fh);
+			else
+			{
+				size_t cmp_index = 0;
+				if (lut1d.data)
+				{
+					if (!are_luts_equal(lut1d, smcube_get_file_lut(fh, cmp_index)))
+					{
+						printf("ERROR: smcube file '%s' 1D LUT did not roundtrip\n", output_file.c_str());
+					}
+					++cmp_index;
+				}
+				if (lut3d.data)
+				{
+					if (!are_luts_equal(lut3d, smcube_get_file_lut(fh, cmp_index)))
+					{
+						printf("ERROR: smcube file '%s' 3D LUT did not roundtrip\n", output_file.c_str());
+					}
+					++cmp_index;
+				}
+			}
+			smcube_close_file(fh);
 		}
+
+		if (lut3d.data) delete[] lut3d.data;
+		if (lut1d.data) delete[] lut1d.data;
 	}
 	return exit_code;
 }
