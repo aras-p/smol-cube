@@ -94,9 +94,9 @@ inline Bytes16 SimdPrefixSum(Bytes16 x)
 
 static void FilterByteDelta(const uint8_t* src, uint8_t* dst, int channels, size_t dataElems)
 {
-    uint8_t prev = 0;
     for (int ich = 0; ich < channels; ++ich)
     {
+        uint8_t prev = 0;
         const uint8_t* srcPtr = src + ich;
         size_t ip = 0;
 
@@ -146,9 +146,9 @@ static void FilterByteDelta(const uint8_t* src, uint8_t* dst, int channels, size
 static void UnFilterByteDelta(const uint8_t* src, uint8_t* dst, int channels, size_t dataElems)
 {
     // "d" case: combined delta+unsplit; SIMD prefix sum delta, unrolled scattered writes into destination
-    uint8_t prev = 0;
     for (int ich = 0; ich < channels; ++ich)
     {
+        uint8_t prev = 0;
         uint8_t* dstPtr = dst + ich;
         size_t ip = 0;
 
