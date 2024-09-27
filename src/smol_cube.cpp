@@ -298,33 +298,41 @@ enum class smcube_data_filter : uint32_t
     FilterCount
 };
 
-smcube_result smcube_write_file(const char* path, size_t lut_count, const smcube_lut* luts, bool use_filter, const char* title, const char* comment)
+struct smcube_luts
 {
-    if (path == nullptr || lut_count == 0 || luts == nullptr)
-        return smcube_result::InvalidArgument;
+    uint8_t* file_data = nullptr;
+    size_t file_data_size = 0;
+    std::string title;
+    std::string comment;
+    std::vector<smcube_lut> luts;
+};
+
+bool smcube_luts_save_to_file_smcube(const char* path, const smcube_luts* luts, bool use_filter)
+{
+    if (path == nullptr || luts == nullptr)
+        return false;
 
     FILE* f = fopen(path, "wb");
     if (f == nullptr)
-        return smcube_result::FileAccessError;
+        return false;
 
     fwrite("SML1", 1, 4, f);
-    if (title != nullptr && title[0] != 0)
+    if (!luts->title.empty())
     {
-        uint64_t len = strlen(title);
+        uint64_t len = luts->title.size();
         fwrite("Titl", 1, 4, f);
         fwrite(&len, sizeof(len), 1, f);
-        fwrite(title, 1, len, f);
+        fwrite(luts->title.data(), 1, len, f);
     }
-    if (comment != nullptr && comment[0] != 0)
+    if (!luts->comment.empty())
     {
-        uint64_t len = strlen(comment);
+        uint64_t len = luts->comment.size();
         fwrite("Comm", 1, 4, f);
         fwrite(&len, sizeof(len), 1, f);
-        fwrite(comment, 1, len, f);
+        fwrite(luts->comment.data(), 1, len, f);
     }
-    for (size_t i = 0; i < lut_count; ++i)
+    for (const smcube_lut& lut : luts->luts)
     {
-        const smcube_lut& lut = luts[i];
         fwrite("ALut", 1, 4, f);
         const uint64_t data_item_len = lut.channels * smcube_data_type_get_size(lut.data_type);
         const uint64_t data_items = lut.size_x * lut.size_y * lut.size_z;
@@ -353,17 +361,8 @@ smcube_result smcube_write_file(const char* path, size_t lut_count, const smcube
     }
 
     fclose(f);
-    return smcube_result::Ok;
+    return true;
 }
-
-struct smcube_luts
-{
-    uint8_t* file_data = nullptr;
-    size_t file_data_size = 0;
-    std::string title;
-    std::string comment;
-    std::vector<smcube_lut> luts;
-};
 
 const char* smcube_luts_get_title(const smcube_luts* handle)
 {
@@ -393,29 +392,14 @@ smcube_lut smcube_luts_get_lut(const smcube_luts* handle, size_t index)
     return handle->luts[index];
 }
 
-static smcube_result cleanup_and_error(smcube_result res, smcube_luts*& r_luts)
+smcube_luts* smcube_luts_load_from_file_smcube(const char* path)
 {
-    if (r_luts)
-    {
-        delete[] r_luts->file_data;
-        r_luts->title.clear();
-        r_luts->comment.clear();
-        r_luts->luts.clear();
-    }
-    delete r_luts;
-    r_luts = nullptr;
-    return res;
-}
+    if (path == nullptr)
+        return nullptr;
 
-smcube_result smcube_luts_load_from_file(const char* path, smcube_luts*& r_luts)
-{
-    if (path == nullptr || r_luts != nullptr)
-        return smcube_result::InvalidArgument;
-
-    r_luts = nullptr;
     FILE* f = fopen(path, "rb");
     if (f == nullptr)
-        return smcube_result::FileAccessError;
+        return nullptr;
 
     fseek(f, 0, SEEK_END);
     int file_size = ftell(f);
@@ -423,40 +407,46 @@ smcube_result smcube_luts_load_from_file(const char* path, smcube_luts*& r_luts)
     if (file_size < 4)
     {
         fclose(f);
-        return cleanup_and_error(smcube_result::InvalidHeaderData, r_luts);
+        return nullptr;
     }
 
-    r_luts = new smcube_luts();
-    r_luts->file_data_size = file_size;
-    r_luts->file_data = new uint8_t[file_size];
-    fread(r_luts->file_data, 1, file_size, f);
+    smcube_luts* luts = new smcube_luts();
+    luts->file_data_size = file_size;
+    luts->file_data = new uint8_t[file_size];
+    fread(luts->file_data, 1, file_size, f);
     fclose(f);
 
-    if (memcmp(r_luts->file_data, "SML1", 4) != 0)
-        return cleanup_and_error(smcube_result::InvalidHeaderData, r_luts);
+    if (memcmp(luts->file_data, "SML1", 4) != 0)
+    {
+        smcube_luts_free(luts);
+        return nullptr;
+    }
     // parse chunks
     size_t offset = 4;
-    while (offset + 12 < r_luts->file_data_size)
+    while (offset + 12 < luts->file_data_size)
     {
         // get and validate chunk length
         uint64_t chunk_len;
-        memcpy(&chunk_len, r_luts->file_data + offset + 4, 8);
-        if (offset + 12 + chunk_len > r_luts->file_data_size)
-            return cleanup_and_error(smcube_result::InvalidContentData, r_luts);
-        if (memcmp(r_luts->file_data + offset, "Titl", 4) == 0 && chunk_len > 0)
+        memcpy(&chunk_len, luts->file_data + offset + 4, 8);
+        if (offset + 12 + chunk_len > luts->file_data_size)
         {
-            const char* str_ptr = (const char*)r_luts->file_data + offset + 12;
-            r_luts->title = std::string(str_ptr, str_ptr + chunk_len);
+            smcube_luts_free(luts);
+            return nullptr;
         }
-        if (memcmp(r_luts->file_data + offset, "Comm", 4) == 0 && chunk_len > 0)
+        if (memcmp(luts->file_data + offset, "Titl", 4) == 0 && chunk_len > 0)
         {
-            const char* str_ptr = (const char*)r_luts->file_data + offset + 12;
-            r_luts->comment = std::string(str_ptr, str_ptr + chunk_len);
+            const char* str_ptr = (const char*)luts->file_data + offset + 12;
+            luts->title = std::string(str_ptr, str_ptr + chunk_len);
         }
-        if (memcmp(r_luts->file_data + offset, "ALut", 4) == 0 && chunk_len > sizeof(smcube_file_alut_header))
+        if (memcmp(luts->file_data + offset, "Comm", 4) == 0 && chunk_len > 0)
+        {
+            const char* str_ptr = (const char*)luts->file_data + offset + 12;
+            luts->comment = std::string(str_ptr, str_ptr + chunk_len);
+        }
+        if (memcmp(luts->file_data + offset, "ALut", 4) == 0 && chunk_len > sizeof(smcube_file_alut_header))
         {
             smcube_file_alut_header head;
-            memcpy(&head, r_luts->file_data + offset + 12, sizeof(head));
+            memcpy(&head, luts->file_data + offset + 12, sizeof(head));
 
             // validate lut header
             if (head.channels < 1 || head.channels > 4 ||
@@ -465,7 +455,8 @@ smcube_result smcube_luts_load_from_file(const char* path, smcube_luts*& r_luts)
                 head.filter >= uint32_t(smcube_data_filter::FilterCount) ||
                 head.size_x > 65536 || head.size_y > 65536 || head.size_z > 65536)
             {
-                return cleanup_and_error(smcube_result::InvalidContentData, r_luts);
+                smcube_luts_free(luts);
+                return nullptr;
             }
 
             smcube_lut lut;
@@ -477,10 +468,13 @@ smcube_result smcube_luts_load_from_file(const char* path, smcube_luts*& r_luts)
             lut.size_z = head.size_z;
             size_t lut_data_size = smcube_lut_get_data_size(lut);
             if (chunk_len - sizeof(smcube_file_alut_header) != lut_data_size)
-                return cleanup_and_error(smcube_result::InvalidContentData, r_luts);
+            {
+                smcube_luts_free(luts);
+                return nullptr;
+            }
 
             // point to file data
-            lut.data = r_luts->file_data + offset + 12 + sizeof(smcube_file_alut_header);
+            lut.data = luts->file_data + offset + 12 + sizeof(smcube_file_alut_header);
 
             // un-filter data if needed
             if (head.filter == uint32_t(smcube_data_filter::ByteDelta))
@@ -493,13 +487,13 @@ smcube_result smcube_luts_load_from_file(const char* path, smcube_luts*& r_luts)
             }
 
             // append to luts array
-            r_luts->luts.push_back(lut);
+            luts->luts.push_back(lut);
         }
 
         offset += 12 + chunk_len;
     }
 
-    return smcube_result::Ok;
+    return luts;
 }
 
 void smcube_luts_free(smcube_luts* handle)
@@ -509,165 +503,158 @@ void smcube_luts_free(smcube_luts* handle)
     delete handle;
 }
 
-
-smcube_result smcube_load_from_resolve_cube_file(const char* path, smcube_lut& r_3dlut, smcube_lut& r_1dlut)
+smcube_luts* smcube_luts_load_from_file_resolve_cube(const char* path)
 {
-    if (path == nullptr || r_3dlut.data != nullptr || r_1dlut.data != nullptr)
-        return smcube_result::InvalidArgument;
+    if (path == nullptr)
+        return nullptr;
 
     FILE* f = fopen(path, "rb");
     if (f == nullptr)
-        return smcube_result::FileAccessError;
+        return nullptr;
 
     char buf[1000];
 
     // read header
     int dim_3d = 0, dim_1d = 0;
-    size_t read_3d = 0, read_1d = 0;
-    bool header = true;
     while (true) {
         char* res = fgets(buf, sizeof(buf), f);
         if (!res)
             break;
-        if (header && buf[0] >= '+' && buf[0] <= '9') // line starts with a number: header is done
-        {
-            header = false;
-            if (dim_1d < 0 || dim_1d > 65536)
-            {
-                fclose(f);
-                return smcube_result::InvalidHeaderData;
-            }
-            if (dim_3d < 0 || dim_3d > 4096)
-            {
-                fclose(f);
-                return smcube_result::InvalidHeaderData;
-            }
-            if (dim_1d == 0 && dim_3d == 0)
-            {
-                fclose(f);
-                return smcube_result::InvalidHeaderData;
-            }
+        if (buf[0] >= '+' && buf[0] <= '9') // line starts with a number: header is done
+            break;
+        int tmp;
+        if (1 == sscanf(buf, "LUT_1D_SIZE %i", &tmp)) {
+            dim_1d = tmp;
+        }
+        if (1 == sscanf(buf, "LUT_3D_SIZE %i", &tmp)) {
+            dim_3d = tmp;
+        }
+        //@TODO: title, comment
+    }
 
-            if (dim_1d > 0)
+    // validate header
+    if (dim_1d < 0 || dim_1d > 65536 || dim_3d < 0 || dim_3d > 4096 || (dim_1d == 0 && dim_3d == 0))
+    {
+        fclose(f);
+        return nullptr;
+    }
+
+    // allocate memory for the data
+    size_t floats_1d = dim_1d > 0 ? dim_1d * 3 : 0;
+    size_t floats_3d = dim_3d > 0 ? dim_3d * dim_3d * dim_3d * 3 : 0;
+
+    smcube_luts* luts = new smcube_luts();
+    luts->file_data_size = (floats_1d + floats_3d) * sizeof(float);
+    luts->file_data = new uint8_t[luts->file_data_size];
+
+    smcube_lut lut1d, lut3d;
+    if (dim_1d > 0)
+    {
+        lut1d.channels = 3;
+        lut1d.dimension = 1;
+        lut1d.data_type = smcube_data_type::Float32;
+        lut1d.size_x = dim_1d;
+        lut1d.size_y = 1;
+        lut1d.size_z = 1;
+        lut1d.data = luts->file_data;
+        luts->luts.push_back(lut1d);
+    }
+    if (dim_3d > 0)
+    {
+        lut3d.channels = 3;
+        lut3d.dimension = 3;
+        lut3d.data_type = smcube_data_type::Float32;
+        lut3d.size_x = dim_3d;
+        lut3d.size_y = dim_3d;
+        lut3d.size_z = dim_3d;
+        lut3d.data = luts->file_data + floats_1d * sizeof(float);
+        luts->luts.push_back(lut3d);
+    }
+
+    // read data
+    size_t read_1d = 0, read_3d = 0;
+    while (true) {
+        // note: first data line is already in buf
+        float x, y, z;
+        if (3 == sscanf(buf, "%f %f %f", &x, &y, &z)) {
+            if (dim_1d > 0 && read_1d < dim_1d)
             {
-                r_1dlut.channels = 3;
-                r_1dlut.dimension = 1;
-                r_1dlut.data_type = smcube_data_type::Float32;
-                r_1dlut.size_x = uint32_t(dim_1d);
-                r_1dlut.size_y = 1;
-                r_1dlut.size_z = 1;
-                r_1dlut.data = new float[dim_1d * 3];
+                ((float*)lut1d.data)[read_1d * 3 + 0] = x;
+                ((float*)lut1d.data)[read_1d * 3 + 1] = y;
+                ((float*)lut1d.data)[read_1d * 3 + 2] = z;
+                ++read_1d;
             }
-            if (dim_3d > 0)
+            else if (dim_3d > 0 && read_3d < dim_3d * dim_3d * dim_3d)
             {
-                r_3dlut.channels = 3;
-                r_3dlut.dimension = 3;
-                r_3dlut.data_type = smcube_data_type::Float32;
-                r_3dlut.size_x = uint32_t(dim_3d);
-                r_3dlut.size_y = uint32_t(dim_3d);
-                r_3dlut.size_z = uint32_t(dim_3d);
-                r_3dlut.data = new float[dim_3d * dim_3d * dim_3d * 3];
+                ((float*)lut3d.data)[read_3d * 3 + 0] = x;
+                ((float*)lut3d.data)[read_3d * 3 + 1] = y;
+                ((float*)lut3d.data)[read_3d * 3 + 2] = z;
+                ++read_3d;
+            }
+            else
+            {
+                fclose(f);
+                smcube_luts_free(luts);
+                return nullptr;
             }
         }
 
-        if (header) {
-            int tmp;
-            if (1 == sscanf(buf, "LUT_1D_SIZE %i", &tmp)) {
-                dim_1d = tmp;
-            }
-            if (1 == sscanf(buf, "LUT_3D_SIZE %i", &tmp)) {
-                dim_3d = tmp;
-            }
-        }
-        else {
-            // read data entry
-            float x, y, z;
-            if (3 == sscanf(buf, "%f %f %f", &x, &y, &z)) {
-
-                if (dim_1d > 0 && read_1d < dim_1d)
-                {
-                    ((float*)r_1dlut.data)[read_1d * 3 + 0] = x;
-                    ((float*)r_1dlut.data)[read_1d * 3 + 1] = y;
-                    ((float*)r_1dlut.data)[read_1d * 3 + 2] = z;
-                    ++read_1d;
-                }
-                else if (dim_3d > 0 && read_3d < dim_3d * dim_3d * dim_3d)
-                {
-                    ((float*)r_3dlut.data)[read_3d * 3 + 0] = x;
-                    ((float*)r_3dlut.data)[read_3d * 3 + 1] = y;
-                    ((float*)r_3dlut.data)[read_3d * 3 + 2] = z;
-                    ++read_3d;
-                }
-                else
-                {
-                    if (r_1dlut.data) delete[] r_1dlut.data; r_1dlut.data = nullptr;
-                    if (r_3dlut.data) delete[] r_3dlut.data; r_3dlut.data = nullptr;
-                    fclose(f);
-                    return smcube_result::InvalidContentData;
-                }
-            }
-        }
+        // read next data line
+        char* res = fgets(buf, sizeof(buf), f);
+        if (!res)
+            break;
     }
 
     fclose(f);
 
     if (dim_1d > 0 && read_1d != dim_1d || dim_3d > 0 && read_3d != dim_3d * dim_3d * dim_3d)
     {
-        if (r_1dlut.data) delete[] r_1dlut.data; r_1dlut.data = nullptr;
-        if (r_3dlut.data) delete[] r_3dlut.data; r_3dlut.data = nullptr;
-        return smcube_result::InvalidContentData;
+        smcube_luts_free(luts);
+        return nullptr;
     }
-    return smcube_result::Ok;
+    return luts;
 }
 
-smcube_result smcube_save_to_resolve_cube_file(const char* path, const smcube_lut& lut3d, const smcube_lut& lut1d)
+static bool is_lut_supported_by_resolve_cube(const smcube_lut& lut)
+{
+    if (lut.channels != 3 || lut.data_type != smcube_data_type::Float32 || (lut.dimension != 1 && lut.dimension != 3))
+        return false;
+    if (lut.dimension == 3 && (lut.size_x != lut.size_y || lut.size_x != lut.size_z || lut.size_y != lut.size_z))
+        return false;
+    return true;
+}
+
+bool smcube_luts_save_to_file_resolve_cube(const char* path, const smcube_luts* luts)
 {
     // argument checks
-    if (path == nullptr || (lut3d.data == nullptr && lut1d.data == nullptr))
-        return smcube_result::InvalidArgument;
-    if (lut1d.data)
-    {
-        if (lut1d.channels != 3 || lut1d.data_type != smcube_data_type::Float32 || lut1d.dimension != 1)
-            return smcube_result::InvalidArgument;
-    }
-    if (lut3d.data)
-    {
-        if (lut3d.size_x != lut3d.size_y || lut3d.size_y != lut3d.size_z || lut3d.size_x != lut3d.size_z)
-            return smcube_result::InvalidArgument;
-        if (lut3d.channels != 3 || lut3d.data_type != smcube_data_type::Float32 || lut3d.dimension != 3)
-            return smcube_result::InvalidArgument;
-    }
+    if (path == nullptr || luts == nullptr || luts->luts.empty())
+        return false;
 
     FILE* f = fopen(path, "wb");
     if (f == nullptr)
-        return smcube_result::FileAccessError;
+        return false;
 
     // write header
     fprintf(f, "# written by smol-cube\n");
-    if (lut1d.data != nullptr)
+    //@TODO: comment, title
+    for (const smcube_lut& lut : luts->luts)
     {
-        fprintf(f, "LUT_1D_SIZE %i\n", lut1d.size_x);
-    }
-    if (lut3d.data != nullptr)
-    {
-        fprintf(f, "LUT_3D_SIZE %i\n", lut3d.size_x);
+        if (!is_lut_supported_by_resolve_cube(lut))
+            continue;
+        if (lut.dimension == 1)
+            fprintf(f, "LUT_1D_SIZE %i\n", lut.size_x);
+        if (lut.dimension == 3)
+            fprintf(f, "LUT_3D_SIZE %i\n", lut.size_x);
     }
 
-    // write data for 1d/shaper lut
-    if (lut1d.data)
+    // write data
+    for (const smcube_lut& lut : luts->luts)
     {
-        const float* data = (const float*)lut1d.data;
-        for (int i = 0; i < lut1d.size_x; ++i)
-        {
-            fprintf(f, "%f %f %f\n", data[0], data[1], data[2]);
-            data += 3;
-        }
-    }
-    // write data for 3d lut
-    if (lut3d.data)
-    {
-        const float* data = (const float*)lut3d.data;
-        for (int i = 0; i < lut3d.size_x * lut3d.size_y * lut3d.size_z; ++i)
+        if (!is_lut_supported_by_resolve_cube(lut))
+            continue;
+        const float* data = (const float*)lut.data;
+        const float* data_end = data + smcube_lut_get_data_size(lut) / sizeof(float);
+        while (data < data_end)
         {
             fprintf(f, "%f %f %f\n", data[0], data[1], data[2]);
             data += 3;
@@ -675,6 +662,5 @@ smcube_result smcube_save_to_resolve_cube_file(const char* path, const smcube_lu
     }
 
     fclose(f);
-
-    return smcube_result::Ok;
+    return true;
 }
