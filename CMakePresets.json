@@ -35,8 +35,8 @@
       },
       "cacheVariables": {
         "CMAKE_OSX_DEPLOYMENT_TARGET": "10.14"
-      }            
-    },    
+      }
+    },
     {
       "name": "x64-debug",
       "displayName": "x64 Debug",
@@ -58,21 +58,11 @@
       }
     },
     {
-      "name": "x64-debug-cl",
-      "displayName": "x64 Debug clang",
+      "name": "x64-release-dbg",
+      "displayName": "x64 RelWithDebInfo",
       "inherits": "x64-debug",
       "cacheVariables": {
-        "CMAKE_C_COMPILER": "clang-cl",
-        "CMAKE_CXX_COMPILER": "clang-cl"
-      }
-    },
-    {
-      "name": "x64-release-cl",
-      "displayName": "x64 Release clang",
-      "inherits": "x64-release",
-      "cacheVariables": {
-        "CMAKE_C_COMPILER": "clang-cl",
-        "CMAKE_CXX_COMPILER": "clang-cl"
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
       }
     },
     {
@@ -90,6 +80,6 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
       }
-    }    
+    }
   ]
 }

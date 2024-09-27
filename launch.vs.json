@@ -1,0 +1,19 @@
+{
+  "version": "0.2.1",
+  "defaults": {},
+  "configurations": [
+    {
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "projectTarget": "smol-cube.exe",
+      "name": "smol-cube.exe",
+      "currentDir": "${workspaceRoot}",
+      "args": [
+        "--verbose",
+        "--roundtrip",
+        "tests/luts/synthetic/shaper_3d.cube",
+        "\"tests/luts/davinci/LMT ACES v0.1.1.cube\""
+      ]
+    }
+  ]
+}
