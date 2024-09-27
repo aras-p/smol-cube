@@ -28,7 +28,7 @@ static bool are_luts_equal(const smcube_lut& la, const smcube_lut& lb)
 	if (la.size_x != lb.size_x) return false;
 	if (la.size_y != lb.size_y) return false;
 	if (la.size_z != lb.size_z) return false;
-	if (memcmp(la.data, lb.data, smcube_lut_data_size(la)) != 0) return false;
+	if (memcmp(la.data, lb.data, smcube_lut_get_data_size(la)) != 0) return false;
 	return true;
 }
 
@@ -103,8 +103,8 @@ int main(int argc, const char** argv)
 		// read the written smol-cube file
 		if (roundtrip)
 		{
-			smcube_file_handle* fh = nullptr;
-			res = smcube_read_file(output_file.c_str(), fh);
+			smcube_luts* fh = nullptr;
+			res = smcube_luts_load_from_file(output_file.c_str(), fh);
 			if (res != smcube_result::Ok)
 			{
 				printf("ERROR: failed to read written smcube file '%s' (error %i)\n", output_file.c_str(), int(res));
@@ -116,7 +116,7 @@ int main(int argc, const char** argv)
 				smcube_lut rtrip_1d, rtrip_3d;
 				if (lut1d.data)
 				{
-					rtrip_1d = smcube_get_file_lut(fh, cmp_index++);
+					rtrip_1d = smcube_luts_get_lut(fh, cmp_index++);
 					if (!are_luts_equal(lut1d, rtrip_1d))
 					{
 						printf("ERROR: smcube file '%s' 1D LUT did not roundtrip\n", output_file.c_str());
@@ -125,7 +125,7 @@ int main(int argc, const char** argv)
 				}
 				if (lut3d.data)
 				{
-					rtrip_3d = smcube_get_file_lut(fh, cmp_index++);
+					rtrip_3d = smcube_luts_get_lut(fh, cmp_index++);
 					if (!are_luts_equal(lut3d, rtrip_3d))
 					{
 						printf("ERROR: smcube file '%s' 3D LUT did not roundtrip\n", output_file.c_str());
@@ -141,7 +141,7 @@ int main(int argc, const char** argv)
 				}
 				smcube_save_to_resolve_cube_file(output_file.c_str(), rtrip_3d, rtrip_1d);
 			}
-			smcube_close_file(fh);
+			smcube_luts_free(fh);
 		}
 
 		if (lut3d.data) delete[] lut3d.data;
