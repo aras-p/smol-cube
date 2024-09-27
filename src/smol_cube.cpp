@@ -512,24 +512,39 @@ smcube_luts* smcube_luts_load_from_file_resolve_cube(const char* path)
     if (f == nullptr)
         return nullptr;
 
-    char buf[1000];
+    char buf[1000] = {};
+    std::string title;
 
     // read header
     int dim_3d = 0, dim_1d = 0;
     while (true) {
-        char* res = fgets(buf, sizeof(buf), f);
+        char* res = fgets(buf, sizeof(buf)-1, f);
         if (!res)
             break;
         if (buf[0] >= '+' && buf[0] <= '9') // line starts with a number: header is done
             break;
         int tmp;
-        if (1 == sscanf(buf, "LUT_1D_SIZE %i", &tmp)) {
+        if (1 == sscanf(buf, "LUT_1D_SIZE %i", &tmp))
+        {
             dim_1d = tmp;
         }
-        if (1 == sscanf(buf, "LUT_3D_SIZE %i", &tmp)) {
+        if (1 == sscanf(buf, "LUT_3D_SIZE %i", &tmp))
+        {
             dim_3d = tmp;
         }
-        //@TODO: title, comment
+        if (strncmp(buf, "TITLE ", 6) == 0)
+        {
+            title = buf + 6;
+            while (!title.empty() && title.back() <= ' ')
+                title.pop_back(); // strip trailing newlines/spaces
+            // strip quotes at start/end
+            if (!title.empty() && title.front() == '"')
+                title = title.substr(1);
+            if (!title.empty() && title.back() == '"')
+                title.pop_back();
+        }
+
+        //@TODO: comment
     }
 
     // validate header
@@ -544,6 +559,7 @@ smcube_luts* smcube_luts_load_from_file_resolve_cube(const char* path)
     size_t floats_3d = dim_3d > 0 ? dim_3d * dim_3d * dim_3d * 3 : 0;
 
     smcube_luts* luts = new smcube_luts();
+    luts->title = title;
     luts->file_data_size = (floats_1d + floats_3d) * sizeof(float);
     luts->file_data = new uint8_t[luts->file_data_size];
 
@@ -636,7 +652,9 @@ bool smcube_luts_save_to_file_resolve_cube(const char* path, const smcube_luts* 
 
     // write header
     fprintf(f, "# written by smol-cube\n");
-    //@TODO: comment, title
+    if (!luts->title.empty())
+        fprintf(f, "TITLE \"%s\"\n", luts->title.c_str());
+    //@TODO: comment
     for (const smcube_lut& lut : luts->luts)
     {
         if (!is_lut_supported_by_resolve_cube(lut))
@@ -656,7 +674,7 @@ bool smcube_luts_save_to_file_resolve_cube(const char* path, const smcube_luts* 
         const float* data_end = data + smcube_lut_get_data_size(lut) / sizeof(float);
         while (data < data_end)
         {
-            fprintf(f, "%f %f %f\n", data[0], data[1], data[2]);
+            fprintf(f, "%.8f %.8f %.8f\n", data[0], data[1], data[2]);
             data += 3;
         }
     }
