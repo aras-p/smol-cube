@@ -6,7 +6,7 @@ endif()
 project ("smol-cube")
 
 add_executable (smol-cube
-	src/main.cpp
+	src/smol_cube_conv_app.cpp
 	src/smol_cube.cpp
 	src/smol_cube.h
 	CMakeLists.txt
@@ -14,12 +14,6 @@ add_executable (smol-cube
 )
 set_property(TARGET smol-cube PROPERTY CXX_STANDARD 17)
 set_property(TARGET smol-cube PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-
-target_include_directories(smol-cube PRIVATE 
-)
-
-target_link_libraries(smol-cube PRIVATE
-)
 
 target_compile_definitions(smol-cube PRIVATE
 	_CRT_SECURE_NO_DEPRECATE
