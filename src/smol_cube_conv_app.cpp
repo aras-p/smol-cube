@@ -1,8 +1,5 @@
 #include "smol_cube.h"
 
-#define SOKOL_TIME_IMPL
-#include "../libs/sokol_time.h"
-
 #include "../libs/argh/argh.h"
 
 /*
