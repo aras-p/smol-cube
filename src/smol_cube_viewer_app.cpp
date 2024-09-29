@@ -1,4 +1,5 @@
 #include "smol_cube.h"
+#include <string>
 
 #define SOKOL_IMPL
 #if defined(__APPLE__)
@@ -86,6 +87,11 @@ static const char* kSokolFragSource =
 "}\n";
 #endif
 
+static const char* kBaseWindowTitle = "Left/Right: change LUT, Up/Down: change intensity";
+static std::string s_cur_lut_title;
+static int s_cur_lut_size = 0;
+static float s_cur_lut_load_time = 0.0f;
+
 static sg_image load_image(const char* path)
 {
 	int width, height, comps;
@@ -107,6 +113,9 @@ static sg_image load_image(const char* path)
 
 static sg_image create_empty_lut(float& lut_size)
 {
+	s_cur_lut_title = "<empty>";
+	s_cur_lut_size = 0;
+	s_cur_lut_load_time = 0.0f;
 	sg_image tex = {};
 	const int SIZE = 2;
 	lut_size = SIZE;
@@ -142,6 +151,8 @@ static sg_image load_lut(const char* path, float& lut_size)
 {
 	lut_size = 2;
 	sg_image tex = {};
+
+	uint64_t t0 = stm_now();
 	smcube_luts* luts = smcube_luts_load_from_file_resolve_cube(path);
 	if (luts == nullptr)
 		return tex;
@@ -179,6 +190,21 @@ static sg_image load_lut(const char* path, float& lut_size)
 		tex = sg_make_image(&desc);
 		lut_size = lut.size_x;
 		delete[] rgba;
+
+		uint64_t t1 = stm_now();
+		s_cur_lut_load_time = stm_ms(stm_diff(t1, t0));
+		s_cur_lut_size = lut.size_x;
+
+		const char* fnamepos = strrchr(path, '/');
+		if (fnamepos == nullptr)
+			fnamepos = path;
+		else
+			fnamepos++;
+		s_cur_lut_title = fnamepos;
+		size_t extpos = s_cur_lut_title.rfind('.');
+		if (extpos != std::string::npos)
+			s_cur_lut_title = s_cur_lut_title.substr(0, extpos);
+
 		break;
 	}
 	smcube_luts_free(luts);
@@ -256,6 +282,10 @@ static void sapp_init(void)
 
 static void sapp_frame(void)
 {
+	char buf[1000];
+	snprintf(buf, sizeof(buf), "%s. Current LUT: %s (%i%%) size %i loaded in %.1fms", kBaseWindowTitle, s_cur_lut_title.c_str(), (int)(gr_uniforms.lut_intensity * 100.0f), s_cur_lut_size, s_cur_lut_load_time);
+	sapp_set_window_title(buf);
+
 	sg_pass pass = {};
 	pass.action.colors[0].load_action = SG_LOADACTION_CLEAR;
 	pass.action.colors[0].clear_value = { 0.5f, 0.5f, 0.5f, 1.0f };
@@ -328,12 +358,28 @@ static void sapp_onevent(const sapp_event* evt)
 			sg_destroy_image(gr_tex_lut);
 			gr_tex_lut = load_lut("tests/luts/tinyglade/Sam_Kolder.cube", gr_uniforms.lut_size);
 		}
+		if (evt->key_code == SAPP_KEYCODE_6)
+		{
+			sg_destroy_image(gr_tex_lut);
+			gr_tex_lut = load_lut("tests/luts/blender/pbrNeutral.cube", gr_uniforms.lut_size);
+		}
+		if (evt->key_code == SAPP_KEYCODE_7)
+		{
+			sg_destroy_image(gr_tex_lut);
+			gr_tex_lut = load_lut("tests/luts/davinci/DCI-P3 Kodak 2383 D65.cube", gr_uniforms.lut_size);
+		}
+		if (evt->key_code == SAPP_KEYCODE_8)
+		{
+			sg_destroy_image(gr_tex_lut);
+			gr_tex_lut = load_lut("tests/luts/davinci/LMT ACES v0.1.1.cube", gr_uniforms.lut_size);
+		}
 	}
 }
 
 sapp_desc sokol_main(int argc, char* argv[])
 {
 	(void)argc; (void)argv;
+	stm_setup();
 
 	// figure out where is the data folder
 #ifdef __APPLE__
