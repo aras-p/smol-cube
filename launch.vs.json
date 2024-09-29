@@ -9,6 +9,8 @@
       "name": "smol-cube.exe",
       "currentDir": "${workspaceRoot}",
       "args": [
+        "--filter",
+        "--float16",
         "--verbose",
         "--roundtrip",
         "tests/luts/synthetic/shaper_3d.cube",

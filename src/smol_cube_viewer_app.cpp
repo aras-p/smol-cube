@@ -160,36 +160,69 @@ static sg_image load_lut(const char* path, float& lut_size)
 	for (size_t li = 0, ln = smcube_luts_get_count(luts); li != ln; ++li)
 	{
 		smcube_lut lut = smcube_luts_get_lut(luts, li);
-		if (lut.channels != 3 || lut.dimension != 3 || lut.data_type != smcube_data_type::Float32)
+		if (lut.dimension != 3)
+			continue;
+		if (lut.channels != 3)
 			continue;
 
-		const float* src_rgb = (const float*)lut.data;
-		float* rgba = new float[lut.size_x * lut.size_y * lut.size_z * 4];
-		size_t idx = 0;
-		for (int iz = 0; iz < lut.size_z; ++iz) {
-			for (int iy = 0; iy < lut.size_y; ++iy) {
-				for (int ix = 0; ix < lut.size_x; ++ix) {
-					rgba[idx * 4 + 0] = src_rgb[idx * 3 + 0];
-					rgba[idx * 4 + 1] = src_rgb[idx * 3 + 1];
-					rgba[idx * 4 + 2] = src_rgb[idx * 3 + 2];
-					rgba[idx * 4 + 3] = 1.0f;
-					++idx;
-				}
-			}
-		}
+		if (lut.data_type != smcube_data_type::Float32 && lut.data_type != smcube_data_type::Float16)
+			continue;
 
 		sg_image_desc desc = {};
 		desc.type = SG_IMAGETYPE_3D;
 		desc.width = lut.size_x;
 		desc.height = lut.size_y;
 		desc.num_slices = lut.size_z;
-		desc.pixel_format = SG_PIXELFORMAT_RGBA32F;
+		desc.pixel_format = lut.data_type == smcube_data_type::Float32 ? SG_PIXELFORMAT_RGBA32F : SG_PIXELFORMAT_RGBA16F;
 		desc.usage = SG_USAGE_IMMUTABLE;
-		desc.data.subimage[0][0].ptr = rgba;
-		desc.data.subimage[0][0].size = lut.size_x * lut.size_y * lut.size_z * 4 * sizeof(float);
+
+		float* rgba32 = nullptr;
+		uint16_t* rgba16 = nullptr;
+		if (lut.data_type == smcube_data_type::Float32)
+		{
+			const float* src_rgb = (const float*)lut.data;
+			rgba32 = new float[lut.size_x * lut.size_y * lut.size_z * 4];
+			size_t idx = 0;
+			for (int iz = 0; iz < lut.size_z; ++iz) {
+				for (int iy = 0; iy < lut.size_y; ++iy) {
+					for (int ix = 0; ix < lut.size_x; ++ix) {
+						rgba32[idx * 4 + 0] = src_rgb[idx * 3 + 0];
+						rgba32[idx * 4 + 1] = src_rgb[idx * 3 + 1];
+						rgba32[idx * 4 + 2] = src_rgb[idx * 3 + 2];
+						rgba32[idx * 4 + 3] = 1.0f;
+						++idx;
+					}
+				}
+			}
+			desc.pixel_format = SG_PIXELFORMAT_RGBA32F;
+			desc.data.subimage[0][0].ptr = rgba32;
+			desc.data.subimage[0][0].size = lut.size_x * lut.size_y * lut.size_z * 4 * sizeof(float);
+		}
+		else if (lut.data_type == smcube_data_type::Float16)
+		{
+			const uint16_t* src_rgb = (const uint16_t*)lut.data;
+			rgba16 = new uint16_t[lut.size_x * lut.size_y * lut.size_z * 4];
+			size_t idx = 0;
+			for (int iz = 0; iz < lut.size_z; ++iz) {
+				for (int iy = 0; iy < lut.size_y; ++iy) {
+					for (int ix = 0; ix < lut.size_x; ++ix) {
+						rgba16[idx * 4 + 0] = src_rgb[idx * 3 + 0];
+						rgba16[idx * 4 + 1] = src_rgb[idx * 3 + 1];
+						rgba16[idx * 4 + 2] = src_rgb[idx * 3 + 2];
+						rgba16[idx * 4 + 3] = 0x3c00; // 1.0 as FP16
+						++idx;
+					}
+				}
+			}
+			desc.pixel_format = SG_PIXELFORMAT_RGBA16F;
+			desc.data.subimage[0][0].ptr = rgba16;
+			desc.data.subimage[0][0].size = lut.size_x * lut.size_y * lut.size_z * 4 * sizeof(uint16_t);
+		}
+
 		tex = sg_make_image(&desc);
 		lut_size = lut.size_x;
-		delete[] rgba;
+		delete[] rgba32;
+		delete[] rgba16;
 
 		uint64_t t1 = stm_now();
 		s_cur_lut_load_time = stm_ms(stm_diff(t1, t0));
@@ -354,6 +387,11 @@ static void sapp_onevent(const sapp_event* evt)
 			sg_destroy_image(gr_tex_lut);
 			gr_tex_lut = load_lut("tests/luts/tinyglade/LUNA_COLOR_float3.smcube", gr_uniforms.lut_size);
 		}
+		if (evt->key_code == SAPP_KEYCODE_F)
+		{
+			sg_destroy_image(gr_tex_lut);
+			gr_tex_lut = load_lut("tests/luts/tinyglade/LUNA_COLOR_half3.smcube", gr_uniforms.lut_size);
+		}
 		if (evt->key_code == SAPP_KEYCODE_5)
 		{
 			sg_destroy_image(gr_tex_lut);
@@ -378,6 +416,11 @@ static void sapp_onevent(const sapp_event* evt)
 		{
 			sg_destroy_image(gr_tex_lut);
 			gr_tex_lut = load_lut("tests/luts/davinci/LMT ACES v0.1.1_float3.smcube", gr_uniforms.lut_size);
+		}
+		if (evt->key_code == SAPP_KEYCODE_K)
+		{
+			sg_destroy_image(gr_tex_lut);
+			gr_tex_lut = load_lut("tests/luts/davinci/LMT ACES v0.1.1_half3.smcube", gr_uniforms.lut_size);
 		}
 	}
 }
@@ -409,14 +452,14 @@ sapp_desc sokol_main(int argc, char* argv[])
 }
 
 // PC, timings in ms:
-//                                      our .cube	OCIO  smcube F32
+//                                      our .cube	OCIO  smcube float3   half3
 // Bluecine_75.cube:			size 33      17.5	58.1
 // Cold_Ice.cube:				size 16       2.2    7.3
-// LUNA_COLOR.cube:				size 33      20.5	61.4   0.7
+// LUNA_COLOR.cube:				size 33      20.5	61.4            0.7     0.5
 // Sam_Kolder.cube:				size 33      16.2   55.0
 // pbrNeutral.cube:				size 57      91.9  302.5
 // DCI-P3 Kodak 2383 D65.cube:	size 33      17.5   56.9
-// LMT ACES v0.1.1.cube:		size 65     178.2  516.1   6.2
+// LMT ACES v0.1.1.cube:		size 65     178.2  516.1            6.2     3.5
 
 // OCIO: https://gist.github.com/aras-p/df0c7310e87daf471eb321291dda3761
 // - does not support TITLE tag (throws exception)

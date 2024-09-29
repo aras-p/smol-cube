@@ -10,9 +10,17 @@ enum class smcube_data_type
 	DataTypeCount
 };
 
+enum smcube_save_flags
+{
+	smcube_save_flag_None = 0,
+	smcube_save_flag_FilterData = (1 << 0),
+	smcube_save_flag_ConvertToFloat16 = (1 << 1),
+	smcube_save_flag_ExpandTo4Channels = (1 << 2),
+};
+
 struct smcube_lut
 {
-	int channels = 3; // 3=RGB
+	int channels = 3; // 3=RGB, 4=RGBA
 	int dimension = 3; // 1=1D, 2=2D, 3=3D
 	smcube_data_type data_type = smcube_data_type::Float32;
 	int size_x = 1;
@@ -32,7 +40,7 @@ smcube_luts* smcube_luts_load_from_file_smcube(const char* path);
 smcube_luts* smcube_luts_load_from_file_resolve_cube(const char* path);
 void smcube_luts_free(smcube_luts* handle);
 
-bool smcube_luts_save_to_file_smcube(const char* path, const smcube_luts* luts, bool use_filter);
+bool smcube_luts_save_to_file_smcube(const char* path, const smcube_luts* luts, smcube_save_flags flags = smcube_save_flag_None);
 bool smcube_luts_save_to_file_resolve_cube(const char* path, const smcube_luts* luts);
 
 const char* smcube_luts_get_title(const smcube_luts* handle);

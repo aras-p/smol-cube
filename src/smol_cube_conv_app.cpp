@@ -39,8 +39,16 @@ int main(int argc, const char** argv)
 		return 1;
 	}
 
+	const bool filter = args["filter"];
+	const bool float16 = args["float16"];
+	const bool rgba = args["rgba"];
 	const bool verbose = args["verbose"];
 	const bool roundtrip = args["roundtrip"];
+
+	uint32_t save_flags = smcube_save_flag_None;
+	if (filter) save_flags |= smcube_save_flag_FilterData;
+	if (float16) save_flags |= smcube_save_flag_ConvertToFloat16;
+	if (rgba) save_flags |= smcube_save_flag_ExpandTo4Channels;
 
 	int exit_code = 0;
 	for (size_t idx = 1; idx < input_files.size(); ++idx)
@@ -83,13 +91,19 @@ int main(int argc, const char** argv)
 			smcube_luts_free(input_luts);
 			continue;
 		}
-		std::string output_file = input_file.substr(0, last_dot_pos) + "_float3.smcube";
+		std::string output_file = input_file.substr(0, last_dot_pos);
+		output_file += '_';
+		output_file += float16 ? "half" : "float";
+		output_file += rgba ? "4" : "3";
+		if (!filter)
+			output_file += "_nofilter";
+		output_file += ".smcube";
 		if (verbose)
 		{
 			printf("- Output file '%s'\n", output_file.c_str());
 		}
 
-		if (!smcube_luts_save_to_file_smcube(output_file.c_str(), input_luts, true))
+		if (!smcube_luts_save_to_file_smcube(output_file.c_str(), input_luts, smcube_save_flags(save_flags)))
 		{
 			printf("ERROR: failed to write output file '%s'\n", output_file.c_str());
 			exit_code = 1;
