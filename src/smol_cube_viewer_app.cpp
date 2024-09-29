@@ -417,6 +417,16 @@ static void sapp_onevent(const sapp_event* evt)
 			sg_destroy_image(gr_tex_lut);
 			gr_tex_lut = load_lut("tests/luts/blender/pbrNeutral.cube", gr_uniforms.lut_size);
 		}
+		if (evt->key_code == SAPP_KEYCODE_T)
+		{
+			sg_destroy_image(gr_tex_lut);
+			gr_tex_lut = load_lut("tests/luts/blender/pbrNeutral_float3.smcube", gr_uniforms.lut_size);
+		}
+		if (evt->key_code == SAPP_KEYCODE_G)
+		{
+			sg_destroy_image(gr_tex_lut);
+			gr_tex_lut = load_lut("tests/luts/blender/pbrNeutral_half4.smcube", gr_uniforms.lut_size);
+		}
 		if (evt->key_code == SAPP_KEYCODE_7)
 		{
 			sg_destroy_image(gr_tex_lut);
@@ -472,7 +482,7 @@ sapp_desc sokol_main(int argc, char* argv[])
 // Cold_Ice.cube:				size 16       2.2    7.3
 // LUNA_COLOR.cube:				size 33      20.5	61.4            0.7     0.5   0.5
 // Sam_Kolder.cube:				size 33      16.2   55.0
-// pbrNeutral.cube:				size 57      91.9  302.5
+// pbrNeutral.cube:				size 57      91.9  302.5            4.5           2.5
 // DCI-P3 Kodak 2383 D65.cube:	size 33      17.5   56.9
 // LMT ACES v0.1.1.cube:		size 65     178.2  516.1            6.2     3.5   3.5
 
