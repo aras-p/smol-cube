@@ -408,12 +408,16 @@ sapp_desc sokol_main(int argc, char* argv[])
 	return res;
 }
 
-// PC:
-// Bluecine_75.cube: size 33 load 17.5ms
-// Cold_Ice.cube: size 16 load 2.2ms
-// LUNA_COLOR.cube: size 33 load 20.5ms					smcube: 0.7ms
-// Sam_Kolder.cube: size 33 load 16.2ms
-// pbrNeutral.cube: size 57 load 91.9ms
-// DCI-P3 Kodak 2383 D65.cube: size 33 load 17.5ms
-// LMT ACES v0.1.1.cube: size 65 load 178.2ms			smcube: 6.2ms
+// PC, timings in ms:
+//                                      our .cube	OCIO  smcube F32
+// Bluecine_75.cube:			size 33      17.5	58.1
+// Cold_Ice.cube:				size 16       2.2    7.3
+// LUNA_COLOR.cube:				size 33      20.5	61.4   0.7
+// Sam_Kolder.cube:				size 33      16.2   55.0
+// pbrNeutral.cube:				size 57      91.9  302.5
+// DCI-P3 Kodak 2383 D65.cube:	size 33      17.5   56.9
+// LMT ACES v0.1.1.cube:		size 65     178.2  516.1   6.2
 
+// OCIO: https://gist.github.com/aras-p/df0c7310e87daf471eb321291dda3761
+// - does not support TITLE tag (throws exception)
+// - fails parsing if DOMAIN_MIN or DOMAIN_MAX tags are present
