@@ -153,7 +153,7 @@ static sg_image load_lut(const char* path, float& lut_size)
 	sg_image tex = {};
 
 	uint64_t t0 = stm_now();
-	smcube_luts* luts = smcube_luts_load_from_file_resolve_cube(path);
+	smcube_luts* luts = smcube_luts_load_from_file(path);
 	if (luts == nullptr)
 		return tex;
 
@@ -201,10 +201,6 @@ static sg_image load_lut(const char* path, float& lut_size)
 		else
 			fnamepos++;
 		s_cur_lut_title = fnamepos;
-		size_t extpos = s_cur_lut_title.rfind('.');
-		if (extpos != std::string::npos)
-			s_cur_lut_title = s_cur_lut_title.substr(0, extpos);
-
 		break;
 	}
 	smcube_luts_free(luts);
@@ -353,6 +349,11 @@ static void sapp_onevent(const sapp_event* evt)
 			sg_destroy_image(gr_tex_lut);
 			gr_tex_lut = load_lut("tests/luts/tinyglade/LUNA_COLOR.cube", gr_uniforms.lut_size);
 		}
+		if (evt->key_code == SAPP_KEYCODE_R)
+		{
+			sg_destroy_image(gr_tex_lut);
+			gr_tex_lut = load_lut("tests/luts/tinyglade/LUNA_COLOR.smcube", gr_uniforms.lut_size);
+		}
 		if (evt->key_code == SAPP_KEYCODE_5)
 		{
 			sg_destroy_image(gr_tex_lut);
@@ -372,6 +373,11 @@ static void sapp_onevent(const sapp_event* evt)
 		{
 			sg_destroy_image(gr_tex_lut);
 			gr_tex_lut = load_lut("tests/luts/davinci/LMT ACES v0.1.1.cube", gr_uniforms.lut_size);
+		}
+		if (evt->key_code == SAPP_KEYCODE_I)
+		{
+			sg_destroy_image(gr_tex_lut);
+			gr_tex_lut = load_lut("tests/luts/davinci/LMT ACES v0.1.1.smcube", gr_uniforms.lut_size);
 		}
 	}
 }
