@@ -30,3 +30,13 @@ if((CMAKE_CXX_COMPILER_ID MATCHES "Clang") AND (CMAKE_SYSTEM_PROCESSOR STREQUAL 
 	target_compile_options(smol-cube PRIVATE -msse4.1)
 	target_compile_options(smol-cube-viewer PRIVATE -msse4.1)
 endif()
+
+if (APPLE)
+	target_compile_options(smol-cube-viewer PRIVATE -x objective-c++)
+	target_link_libraries(smol-cube-viewer PRIVATE
+		"-framework Cocoa"
+		"-framework Metal"
+		"-framework MetalKit"
+		"-framework QuartzCore"
+	)
+endif ()

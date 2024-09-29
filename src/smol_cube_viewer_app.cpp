@@ -45,6 +45,8 @@ static const char* kSokolFragSource =
 #ifdef SOKOL_METAL
 "#include <metal_stdlib>\n"
 "using namespace metal;\n"
+"#define Sample sample\n"
+"#define lerp mix\n"
 "struct frame_uni { float2 lut_intensity_size; };\n"
 "struct v2f { float2 uv; };\n"
 "fragment float4 fs_main(\n"

@@ -1,4 +1,5 @@
-﻿.vs
+.vs
 out/*
+build/*
 .DS_Store
 tests/luts/*/*.out.cube
