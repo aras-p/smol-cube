@@ -1,3 +1,4 @@
 ﻿.vs
 out/*
 .DS_Store
+tests/luts/*/*.out.cube
