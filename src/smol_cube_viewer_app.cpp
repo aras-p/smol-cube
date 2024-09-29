@@ -162,7 +162,7 @@ static sg_image load_lut(const char* path, float& lut_size)
 		smcube_lut lut = smcube_luts_get_lut(luts, li);
 		if (lut.dimension != 3)
 			continue;
-		if (lut.channels != 3)
+		if (lut.channels != 3 && lut.channels != 4)
 			continue;
 
 		if (lut.data_type != smcube_data_type::Float32 && lut.data_type != smcube_data_type::Float16)
@@ -180,43 +180,58 @@ static sg_image load_lut(const char* path, float& lut_size)
 		uint16_t* rgba16 = nullptr;
 		if (lut.data_type == smcube_data_type::Float32)
 		{
-			const float* src_rgb = (const float*)lut.data;
-			rgba32 = new float[lut.size_x * lut.size_y * lut.size_z * 4];
-			size_t idx = 0;
-			for (int iz = 0; iz < lut.size_z; ++iz) {
-				for (int iy = 0; iy < lut.size_y; ++iy) {
-					for (int ix = 0; ix < lut.size_x; ++ix) {
-						rgba32[idx * 4 + 0] = src_rgb[idx * 3 + 0];
-						rgba32[idx * 4 + 1] = src_rgb[idx * 3 + 1];
-						rgba32[idx * 4 + 2] = src_rgb[idx * 3 + 2];
-						rgba32[idx * 4 + 3] = 1.0f;
-						++idx;
+			desc.pixel_format = SG_PIXELFORMAT_RGBA32F;
+			desc.data.subimage[0][0].size = lut.size_x * lut.size_y * lut.size_z * 4 * sizeof(float);
+
+			if (lut.channels == 4)
+			{
+				desc.data.subimage[0][0].ptr = lut.data;
+			}
+			else
+			{
+				const float* src_rgb = (const float*)lut.data;
+				rgba32 = new float[lut.size_x * lut.size_y * lut.size_z * 4];
+				size_t idx = 0;
+				for (int iz = 0; iz < lut.size_z; ++iz) {
+					for (int iy = 0; iy < lut.size_y; ++iy) {
+						for (int ix = 0; ix < lut.size_x; ++ix) {
+							rgba32[idx * 4 + 0] = src_rgb[idx * 3 + 0];
+							rgba32[idx * 4 + 1] = src_rgb[idx * 3 + 1];
+							rgba32[idx * 4 + 2] = src_rgb[idx * 3 + 2];
+							rgba32[idx * 4 + 3] = 1.0f;
+							++idx;
+						}
 					}
 				}
+				desc.data.subimage[0][0].ptr = rgba32;
 			}
-			desc.pixel_format = SG_PIXELFORMAT_RGBA32F;
-			desc.data.subimage[0][0].ptr = rgba32;
-			desc.data.subimage[0][0].size = lut.size_x * lut.size_y * lut.size_z * 4 * sizeof(float);
 		}
 		else if (lut.data_type == smcube_data_type::Float16)
 		{
-			const uint16_t* src_rgb = (const uint16_t*)lut.data;
-			rgba16 = new uint16_t[lut.size_x * lut.size_y * lut.size_z * 4];
-			size_t idx = 0;
-			for (int iz = 0; iz < lut.size_z; ++iz) {
-				for (int iy = 0; iy < lut.size_y; ++iy) {
-					for (int ix = 0; ix < lut.size_x; ++ix) {
-						rgba16[idx * 4 + 0] = src_rgb[idx * 3 + 0];
-						rgba16[idx * 4 + 1] = src_rgb[idx * 3 + 1];
-						rgba16[idx * 4 + 2] = src_rgb[idx * 3 + 2];
-						rgba16[idx * 4 + 3] = 0x3c00; // 1.0 as FP16
-						++idx;
+			desc.pixel_format = SG_PIXELFORMAT_RGBA16F;
+			desc.data.subimage[0][0].size = lut.size_x * lut.size_y * lut.size_z * 4 * sizeof(uint16_t);
+			if (lut.channels == 4)
+			{
+				desc.data.subimage[0][0].ptr = lut.data;
+			}
+			else
+			{
+				const uint16_t* src_rgb = (const uint16_t*)lut.data;
+				rgba16 = new uint16_t[lut.size_x * lut.size_y * lut.size_z * 4];
+				size_t idx = 0;
+				for (int iz = 0; iz < lut.size_z; ++iz) {
+					for (int iy = 0; iy < lut.size_y; ++iy) {
+						for (int ix = 0; ix < lut.size_x; ++ix) {
+							rgba16[idx * 4 + 0] = src_rgb[idx * 3 + 0];
+							rgba16[idx * 4 + 1] = src_rgb[idx * 3 + 1];
+							rgba16[idx * 4 + 2] = src_rgb[idx * 3 + 2];
+							rgba16[idx * 4 + 3] = 0x3c00; // 1.0 as FP16
+							++idx;
+						}
 					}
 				}
+				desc.data.subimage[0][0].ptr = rgba16;
 			}
-			desc.pixel_format = SG_PIXELFORMAT_RGBA16F;
-			desc.data.subimage[0][0].ptr = rgba16;
-			desc.data.subimage[0][0].size = lut.size_x * lut.size_y * lut.size_z * 4 * sizeof(uint16_t);
 		}
 
 		tex = sg_make_image(&desc);
@@ -390,7 +405,7 @@ static void sapp_onevent(const sapp_event* evt)
 		if (evt->key_code == SAPP_KEYCODE_F)
 		{
 			sg_destroy_image(gr_tex_lut);
-			gr_tex_lut = load_lut("tests/luts/tinyglade/LUNA_COLOR_half3.smcube", gr_uniforms.lut_size);
+			gr_tex_lut = load_lut("tests/luts/tinyglade/LUNA_COLOR_half4.smcube", gr_uniforms.lut_size);
 		}
 		if (evt->key_code == SAPP_KEYCODE_5)
 		{
@@ -420,7 +435,7 @@ static void sapp_onevent(const sapp_event* evt)
 		if (evt->key_code == SAPP_KEYCODE_K)
 		{
 			sg_destroy_image(gr_tex_lut);
-			gr_tex_lut = load_lut("tests/luts/davinci/LMT ACES v0.1.1_half3.smcube", gr_uniforms.lut_size);
+			gr_tex_lut = load_lut("tests/luts/davinci/LMT ACES v0.1.1_half4.smcube", gr_uniforms.lut_size);
 		}
 	}
 }
@@ -452,14 +467,14 @@ sapp_desc sokol_main(int argc, char* argv[])
 }
 
 // PC, timings in ms:
-//                                      our .cube	OCIO  smcube float3   half3
+//                                      our .cube	OCIO  smcube float3   half3 half4
 // Bluecine_75.cube:			size 33      17.5	58.1
 // Cold_Ice.cube:				size 16       2.2    7.3
-// LUNA_COLOR.cube:				size 33      20.5	61.4            0.7     0.5
+// LUNA_COLOR.cube:				size 33      20.5	61.4            0.7     0.5   0.5
 // Sam_Kolder.cube:				size 33      16.2   55.0
 // pbrNeutral.cube:				size 57      91.9  302.5
 // DCI-P3 Kodak 2383 D65.cube:	size 33      17.5   56.9
-// LMT ACES v0.1.1.cube:		size 65     178.2  516.1            6.2     3.5
+// LMT ACES v0.1.1.cube:		size 65     178.2  516.1            6.2     3.5   3.5
 
 // OCIO: https://gist.github.com/aras-p/df0c7310e87daf471eb321291dda3761
 // - does not support TITLE tag (throws exception)

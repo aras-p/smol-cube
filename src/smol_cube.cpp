@@ -564,13 +564,13 @@ bool smcube_luts_save_to_file_smcube(const char* path, const smcube_luts* luts, 
     }
     const bool use_filter = flags & smcube_save_flag_FilterData;
     const bool use_float16 = flags & smcube_save_flag_ConvertToFloat16;
+    const bool use_rgba = flags & smcube_save_flag_ExpandTo4Channels;
 
     for (const smcube_lut& lut : luts->luts)
     {
         fwrite("ALut", 1, 4, f);
         uint64_t data_item_len = lut.channels * smcube_data_type_get_size(lut.data_type);
         const uint64_t data_items = lut.size_x * lut.size_y * lut.size_z;
-        uint64_t data_size = data_item_len * data_items;
         smcube_file_alut_header head;
         head.channels = lut.channels;
         head.dimension = lut.dimension;
@@ -583,16 +583,34 @@ bool smcube_luts_save_to_file_smcube(const char* path, const smcube_luts* luts, 
         const uint8_t* data = (const uint8_t*)lut.data;
 
         uint8_t* data_fp16 = nullptr;
+        uint8_t* data_rgba = nullptr;
         if (use_float16 && lut.data_type == smcube_data_type::Float32)
         {
-            data_size = data_items * lut.channels * 2;
-            data_item_len = lut.channels * 2;
-            data_fp16 = new uint8_t[data_size];
-            float_to_half((const float*)data, (uint16_t*)data_fp16, data_items * lut.channels);
             head.data_type = uint32_t(smcube_data_type::Float16);
+            data_item_len = head.channels * smcube_data_type_get_size((smcube_data_type)head.data_type);
+            data_fp16 = new uint8_t[data_item_len * data_items];
+            float_to_half((const float*)data, (uint16_t*)data_fp16, data_items * head.channels);
             data = data_fp16;
         }
+        if (use_rgba && head.channels == 3)
+        {
+            head.channels = 4;
+            size_t prev_data_item_len = data_item_len;
+            data_item_len = head.channels * smcube_data_type_get_size((smcube_data_type)head.data_type);
+            data_rgba = new uint8_t[data_item_len * data_items];
+            const uint8_t* src = data;
+            uint8_t* dst = data_rgba;
+            for (int i = 0; i < data_items; ++i)
+            {
+                memcpy(dst, src, prev_data_item_len);
+                memset(dst + prev_data_item_len, 0, data_item_len - prev_data_item_len);
+                src += prev_data_item_len;
+                dst += data_item_len;
+            }
+            data = data_rgba;
+        }
 
+        const uint64_t data_size = data_item_len * data_items;
         const uint64_t chunk_len = sizeof(smcube_file_alut_header) + data_size;
         fwrite(&chunk_len, sizeof(chunk_len), 1, f);
         fwrite(&head, sizeof(head), 1, f);
@@ -607,6 +625,7 @@ bool smcube_luts_save_to_file_smcube(const char* path, const smcube_luts* luts, 
             fwrite(data, 1, data_size, f);
         }
         delete[] data_fp16;
+        delete[] data_rgba;
     }
 
     fclose(f);

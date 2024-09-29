@@ -11,6 +11,7 @@
       "args": [
         "--filter",
         "--float16",
+        "--rgba",
         "--verbose",
         "--roundtrip",
         "tests/luts/synthetic/shaper_3d.cube",
