@@ -27,6 +27,7 @@ size_t smcube_data_type_get_size(smcube_data_type type);
 size_t smcube_lut_get_data_size(const smcube_lut& lut);
 
 
+smcube_luts* smcube_luts_load_from_file(const char* path);
 smcube_luts* smcube_luts_load_from_file_smcube(const char* path);
 smcube_luts* smcube_luts_load_from_file_resolve_cube(const char* path);
 void smcube_luts_free(smcube_luts* handle);

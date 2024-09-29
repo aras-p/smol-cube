@@ -380,6 +380,24 @@ smcube_lut smcube_luts_get_lut(const smcube_luts* handle, size_t index)
     return handle->luts[index];
 }
 
+static bool str_ends_with(const char* str, const char* suffix)
+{
+    size_t str_len = strlen(str);
+    size_t suffix_len = strlen(suffix);
+    if (suffix_len > str_len)
+        return false;
+    return memcmp(str + str_len - suffix_len, suffix, suffix_len) == 0;
+}
+
+smcube_luts* smcube_luts_load_from_file(const char* path)
+{
+    if (str_ends_with(path, ".cube"))
+        return smcube_luts_load_from_file_resolve_cube(path);
+    if (str_ends_with(path, ".smcube"))
+        return smcube_luts_load_from_file_smcube(path);
+    return nullptr;
+}
+
 smcube_luts* smcube_luts_load_from_file_smcube(const char* path)
 {
     if (path == nullptr)
