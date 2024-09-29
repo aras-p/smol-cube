@@ -352,7 +352,7 @@ static void sapp_onevent(const sapp_event* evt)
 		if (evt->key_code == SAPP_KEYCODE_R)
 		{
 			sg_destroy_image(gr_tex_lut);
-			gr_tex_lut = load_lut("tests/luts/tinyglade/LUNA_COLOR.smcube", gr_uniforms.lut_size);
+			gr_tex_lut = load_lut("tests/luts/tinyglade/LUNA_COLOR_float3.smcube", gr_uniforms.lut_size);
 		}
 		if (evt->key_code == SAPP_KEYCODE_5)
 		{
@@ -377,7 +377,7 @@ static void sapp_onevent(const sapp_event* evt)
 		if (evt->key_code == SAPP_KEYCODE_I)
 		{
 			sg_destroy_image(gr_tex_lut);
-			gr_tex_lut = load_lut("tests/luts/davinci/LMT ACES v0.1.1.smcube", gr_uniforms.lut_size);
+			gr_tex_lut = load_lut("tests/luts/davinci/LMT ACES v0.1.1_float3.smcube", gr_uniforms.lut_size);
 		}
 	}
 }

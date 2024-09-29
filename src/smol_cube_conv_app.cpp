@@ -83,7 +83,7 @@ int main(int argc, const char** argv)
 			smcube_luts_free(input_luts);
 			continue;
 		}
-		std::string output_file = input_file.substr(0, last_dot_pos) + ".smcube";
+		std::string output_file = input_file.substr(0, last_dot_pos) + "_float3.smcube";
 		if (verbose)
 		{
 			printf("- Output file '%s'\n", output_file.c_str());
@@ -128,7 +128,7 @@ int main(int argc, const char** argv)
 						}
 					}
 				}
-				output_file = input_file.substr(0, last_dot_pos) + "_.cube";
+				output_file = input_file.substr(0, last_dot_pos) + ".out.cube";
 				if (verbose)
 				{
 					printf("- Output roundtrip file '%s'\n", output_file.c_str());
