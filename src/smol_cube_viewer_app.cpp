@@ -407,3 +407,13 @@ sapp_desc sokol_main(int argc, char* argv[])
 
 	return res;
 }
+
+// PC:
+// Bluecine_75.cube: size 33 load 17.5ms
+// Cold_Ice.cube: size 16 load 2.2ms
+// LUNA_COLOR.cube: size 33 load 20.5ms					smcube: 0.7ms
+// Sam_Kolder.cube: size 33 load 16.2ms
+// pbrNeutral.cube: size 57 load 91.9ms
+// DCI-P3 Kodak 2383 D65.cube: size 33 load 17.5ms
+// LMT ACES v0.1.1.cube: size 65 load 178.2ms			smcube: 6.2ms
+
