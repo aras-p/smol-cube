@@ -1,4 +1,4 @@
-# smol-cube: smaller Davinci/Adobe/Iridas .LUT file alternative
+# smol-cube: smaller Resolve/Adobe/Iridas .LUT file alternative
 
 `.cube` LUT files are often used in photography or movie workflows, encapsulating complex color space transformations,
 emulating film stock or applying a set of color grading operations. They are essentially a 3D lookup texture (LUT),
