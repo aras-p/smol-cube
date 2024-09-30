@@ -899,8 +899,8 @@ static const char* parse_float(const char* p, const char* end, float fallback, f
 
 static bool parse_3floats(const char* p, const char* end, float* dst)
 {
-    valid = true;
-    for (int i = 0; i < count; ++i)
+    bool valid = true;
+    for (int i = 0; i < 3; ++i)
         p = parse_float(p, end, 0.0f, dst[i], valid);
     return valid;
 }
