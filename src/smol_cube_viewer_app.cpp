@@ -8,7 +8,7 @@
 #elif defined(_WIN32)
 #define SOKOL_D3D11
 #else
-#error "Unsupported Sokol build platform"
+#define SOKOL_GLCORE
 #endif
 #include "../libs/sokol/sokol_app.h"
 #include "../libs/sokol/sokol_gfx.h"
@@ -57,6 +57,13 @@ static const char* kSokolVertexSource =
 "    o.pos = float4(uv * float2(2, -2) + float2(-1, 1), 0, 1);\n"
 "    return o;\n"
 "}\n";
+#elif defined(SOKOL_GLCORE)
+"#version 410\n"
+"out vec2 uv;\n"
+"void main() {\n"
+"  uv = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2);\n"
+"  gl_Position = vec4(uv * vec2(2, -2) + vec2(-1, 1), 0, 1);\n"
+"}";
 #endif
 
 static const char* kSokolFragSource =
@@ -106,6 +113,33 @@ static const char* kSokolFragSource =
 "  float3 cc_col = texlut.Sample(smp, lutuv).rgb;\n"
 "  col = lerp(col, cc_col, intensity);\n"
 "  return float4(col, 1.0);\n"
+"}\n";
+#elif defined(SOKOL_GLCORE)
+"#version 410\n"
+"uniform vec2 lut_intensity_size;\n"
+"in vec2 uv;\n"
+"out vec4 frag_color;\n"
+"uniform sampler2D tex0;\n"
+"uniform sampler2D tex1;\n"
+"uniform sampler2D tex2;\n"
+"uniform sampler2D tex3;\n"
+"uniform sampler3D texlut;\n"
+"void main()\n"
+"{\n"
+"  float intensity = lut_intensity_size.x;\n"
+"  float lutsize = lut_intensity_size.y;\n"
+"  vec3 col1 = texture(tex0, uv * 2.0 - vec2(0,0)).rgb;\n"
+"  vec3 col2 = texture(tex1, uv * 2.0 - vec2(1,0)).rgb;\n"
+"  vec3 col3 = texture(tex2, uv * 2.0 - vec2(0,1)).rgb;\n"
+"  vec3 col4 = texture(tex3, uv * 2.0 - vec2(1,1)).rgb;\n"
+"  vec3 col12 = uv.x < 0.5 ? col1 : col2;\n"
+"  vec3 col34 = uv.x < 0.5 ? col3 : col4;\n"
+"  vec3 col = vec3(0);\n"
+"  col = uv.y < 0.5 ? col12 : col34;\n"
+"  vec3 lutuv = col * ((lutsize-1) / lutsize) + 0.5/lutsize;\n"
+"  vec3 cc_col = texture(texlut, lutuv).rgb;\n"
+"  col = mix(col, cc_col, intensity);\n"
+"  frag_color = vec4(col, 1.0);\n"
 "}\n";
 #endif
 
@@ -321,7 +355,7 @@ static void sapp_init(void)
 	gr_tex_photo4 = load_image("tests/photo4.jpg");
 
 	// load LUT
-	s_lut_index = s_lut_files.size() - 1;
+	s_lut_index = int(s_lut_files.size()) - 1;
 	gr_tex_lut = load_lut(s_lut_files[s_lut_index].c_str(), gr_uniforms.lut_size);
 
 	// sampler

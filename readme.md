@@ -82,7 +82,8 @@ Tiny viewer that loads several pictures from under `tests/` folder and displays 
 Uses [Sokol libraries](https://github.com/floooh/sokol) for graphics/application and
 [stb_image.h](https://github.com/nothings/stb/blob/master/stb_image.h) for loading the photos.
 
-The pictures are displayed and the LUTs applied using a GPU 3D texture, using D3D11 (Windows) or Metal (macOS).
+The pictures are displayed and the LUTs applied using a GPU 3D texture, using D3D11 (Windows), Metal (macOS)
+or OpenGL (Linux - untested).
 
 ![](/doc/shot-viewer.jpg)
 
