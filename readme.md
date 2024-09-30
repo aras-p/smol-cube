@@ -29,6 +29,25 @@ This library provides a simple binary `.smcube` format. It has the following fea
   [Blosc bytedelta](https://www.blosc.org/posts/bytedelta-enhance-compression-toolset/) for details.
 - Similar to Resolve .cube format, it can have multiple LUTs (e.g. 1D shaper LUT followed by 3D LUT).
 
+Compared to a text based file format, a binary format usually takes up less space. Text based formats do compress
+pretty well, however the lossless data filter used in smol-cube makes it more compressible. Additionally,
+smol-cube can convert the LUT data into half-precision floats, since many applications (e.g. game engines like Unity)
+use half-precision LUTs at runtime anyway.
+
+![](/doc/chart-pbrneutral-size.png)
+
+Taking Khronos [PBR Neutral LUT](https://github.com/KhronosGroup/ToneMapping/tree/main/PBR_Neutral) as an example,
+the raw .cube file size is 5.4MB. Even if we compress that with zsd level 10, it is still 543 KB. With smol-cube,
+half precision and zstd level 10, that becomes only 27 KB.
+
+![](/doc/chart-pbrneutral-loadtime.png)
+
+Likewise, loading a simple binary format is much faster than loading from a text-based file. This library can
+load the text based .cube files too, and takes 55ms to load the Khronos PBR Neutral file (for comparison, OpenColorIO 2.3
+is even slower at loading this file: 302ms). However the load time can go down to 2ms for a .smcube half precision
+format. (the times are for loading the file *and* creating a GPU 3D texture with that data, on D3D11).
+
+
 ### smol-cube C++ library
 
 The library itself is written in C++, and requires C++ 17 or later. It provides functions for:
@@ -49,15 +68,3 @@ In order to use the library, compile `src/smol_cube.cpp` in your project, and in
 ### smol-cube-viewer app
 
 `smol-cube-viewer` TBD.
-
-
-
-
-| LUT                    | LUT size | File size, KB  | Zipped size, KB | Load time, ms | OCIO load time, ms |
-|------------------------|---------:|---------------:|----------------:|--------------:|-------------------:|
-|LUNA_COLOR.cube         | 33       |         1193   |             459 |          11.7 |               61.4 |
-|LUNA_COLOR.smcube       | 33       |          421   |             246 |           0.7 |                    |
-|LUNA_COLOR.smcube half4 | 33       |          281   |              79 |           0.5 |                    |
-|pbrNeutral.cube         | 57       |         5367   |             759 |          54.7 |              302.5 |
-|pbrNeutral.smcube       | 57       |         2170   |             197 |           4.5 |                    |
-|pbrNeutral.smcube half4 | 57       |         1447   |              44 |           2.5 |                    |

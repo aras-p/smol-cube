@@ -89,7 +89,7 @@ static const char* kSokolFragSource =
 "}\n";
 #endif
 
-static const char* kBaseWindowTitle = "Left/Right: change LUT, Up/Down: change intensity";
+static const char* kBaseWindowTitle = "L/R: change LUT, U/D: change intensity";
 static std::string s_cur_lut_title;
 static int s_cur_lut_size = 0;
 static float s_cur_lut_load_time = 0.0f;
@@ -237,12 +237,12 @@ static sg_image load_lut(const char* path, float& lut_size)
 		}
 
 		tex = sg_make_image(&desc);
-		lut_size = lut.size_x;
+		lut_size = float(lut.size_x);
 		delete[] rgba32;
 		delete[] rgba16;
 
 		uint64_t t1 = stm_now();
-		s_cur_lut_load_time = stm_ms(stm_diff(t1, t0));
+		s_cur_lut_load_time = float(stm_ms(stm_diff(t1, t0)));
 		s_cur_lut_size = lut.size_x;
 
 		const char* fnamepos = strrchr(path, '/');
@@ -329,7 +329,7 @@ static void sapp_init(void)
 static void sapp_frame(void)
 {
 	char buf[1000];
-	snprintf(buf, sizeof(buf), "%s. Current LUT: %s (%i%%) size %i loaded in %.1fms", kBaseWindowTitle, s_cur_lut_title.c_str(), (int)(gr_uniforms.lut_intensity * 100.0f), s_cur_lut_size, s_cur_lut_load_time);
+	snprintf(buf, sizeof(buf), "%s. Current LUT: %s (%i%%) size %i loaded in %.2fms", kBaseWindowTitle, s_cur_lut_title.c_str(), (int)(gr_uniforms.lut_intensity * 100.0f), s_cur_lut_size, s_cur_lut_load_time);
 	sapp_set_window_title(buf);
 
 	sg_pass pass = {};
@@ -428,6 +428,11 @@ static void sapp_onevent(const sapp_event* evt)
 		{
 			sg_destroy_image(gr_tex_lut);
 			gr_tex_lut = load_lut("tests/luts/blender/pbrNeutral_half4.smcube", gr_uniforms.lut_size);
+		}
+		if (evt->key_code == SAPP_KEYCODE_B)
+		{
+			sg_destroy_image(gr_tex_lut);
+			gr_tex_lut = load_lut("tests/luts/blender/pbrNeutral_half4_nofilter.smcube", gr_uniforms.lut_size);
 		}
 		if (evt->key_code == SAPP_KEYCODE_7)
 		{
