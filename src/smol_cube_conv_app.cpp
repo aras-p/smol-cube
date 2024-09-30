@@ -4,14 +4,54 @@
 
 static bool are_luts_equal(const smcube_luts* ha, size_t ia, const smcube_luts* hb, size_t ib)
 {
-	if (smcube_lut_get_channels(ha, ia) != smcube_lut_get_channels(hb, ib)) return false;
-	if (smcube_lut_get_dimension(ha, ia) != smcube_lut_get_dimension(hb, ib)) return false;
-	if (smcube_lut_get_data_type(ha, ia) != smcube_lut_get_data_type(hb, ib)) return false;
-	if (smcube_lut_get_size_x(ha, ia) != smcube_lut_get_size_x(hb, ib)) return false;
-	if (smcube_lut_get_size_y(ha, ia) != smcube_lut_get_size_y(hb, ib)) return false;
-	if (smcube_lut_get_size_z(ha, ia) != smcube_lut_get_size_z(hb, ib)) return false;
-	if (memcmp(smcube_lut_get_data(ha, ia), smcube_lut_get_data(hb, ib), smcube_lut_get_data_size(ha, ia)) != 0) return false;
-	return true;
+	const int dima = smcube_lut_get_dimension(ha, ia);
+	const int dimb = smcube_lut_get_dimension(hb, ib);
+	if (dima != dimb) return false;
+
+	const int sizeax = smcube_lut_get_size_x(ha, ia), sizeay = smcube_lut_get_size_y(ha, ia), sizeaz = smcube_lut_get_size_z(ha, ia);
+	const int sizebx = smcube_lut_get_size_x(hb, ib), sizeby = smcube_lut_get_size_y(hb, ib), sizebz = smcube_lut_get_size_z(hb, ib);
+	if (sizeax != sizebx) return false;
+	if (sizeay != sizeby) return false;
+	if (sizeaz != sizebz) return false;
+
+	const int channelsa = smcube_lut_get_channels(ha, ia);
+	const int channelsb = smcube_lut_get_channels(hb, ib);
+	smcube_data_type typea = smcube_lut_get_data_type(ha, ia);
+	smcube_data_type typeb = smcube_lut_get_data_type(hb, ib);
+
+	if (channelsa == channelsb && typea == typeb) {
+		if (memcmp(smcube_lut_get_data(ha, ia), smcube_lut_get_data(hb, ib), smcube_lut_get_data_size(ha, ia)) != 0)
+			return false;
+	}
+
+	// convert to Float32 RGBA
+	bool ok = true;
+	const size_t float_count = sizeax * sizeay * sizeaz * 4;
+	float* rgbaa = new float[float_count];
+	float* rgbab = new float[float_count];
+	smcube_lut_convert_data(ha, ia, smcube_data_type::Float32, 4, rgbaa);
+	smcube_lut_convert_data(hb, ib, smcube_data_type::Float32, 4, rgbab);
+	float maxdiff = 0.0f;
+	for (size_t i = 0; i < float_count; ++i)
+	{
+		float diff = fabsf(rgbaa[i] - rgbab[i]);
+		if (diff > maxdiff)
+			maxdiff = diff;
+	}
+	if (typea == typeb)
+	{
+		if (maxdiff > 0.0f)
+			ok = false; // LUTs of the same type should have no difference at all (besides channels being different)
+	}
+	else
+	{
+		if (maxdiff > 0.004f)
+			ok = false; // different types (FP32 vs FP16) allow some difference, hand picked here
+	}
+
+	delete[] rgbaa;
+	delete[] rgbab;
+	return ok;
 }
 
 int main(int argc, const char** argv)

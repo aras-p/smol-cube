@@ -42,3 +42,5 @@ const void* smcube_lut_get_data(const smcube_luts* handle, size_t index);
 
 size_t smcube_lut_get_data_size(const smcube_luts* handle, size_t index);
 size_t smcube_data_type_get_size(smcube_data_type type);
+
+void smcube_lut_convert_data(const smcube_luts* handle, size_t index, smcube_data_type dst_type, int dst_channels, void* dst_data);

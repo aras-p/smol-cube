@@ -1082,3 +1082,88 @@ bool smcube_save_to_file_resolve_cube(const char* path, const smcube_luts* luts)
     fclose(f);
     return true;
 }
+
+void smcube_lut_convert_data(const smcube_luts* handle, size_t index, smcube_data_type dst_type, int dst_channels, void* dst_data)
+{
+    if (handle == nullptr || index >= handle->luts.size())
+        return;
+    if (dst_data == nullptr || dst_type >= smcube_data_type::DataTypeCount || dst_channels < 1 || dst_channels > 4)
+        return;
+
+    const smcube_lut& lut = handle->luts[index];
+    const size_t data_items = lut.size_x * lut.size_y * lut.size_z;
+    const size_t src_item_size = smcube_data_type_get_size(lut.data_type) * lut.channels;
+
+    if (dst_type == lut.data_type && dst_channels == lut.channels) {
+        // no conversion needed, just copy
+        memcpy(dst_data, lut.data, data_items * src_item_size);
+        return;
+    }
+
+    const int copy_channels = lut.channels < dst_channels ? lut.channels : dst_channels;
+    const int skip_channels = lut.channels - copy_channels;
+    const int zero_channels = dst_channels - copy_channels;
+
+    if (lut.data_type == smcube_data_type::Float16)
+    {
+        // source is FP16
+        const uint16_t* src = (const uint16_t*)lut.data;
+        if (dst_type == smcube_data_type::Float32)
+        {
+            // FP16 -> FP32
+            float* dst = (float*)dst_data;
+            for (size_t i = 0; i < data_items; ++i)
+            {
+                for (int ch = 0; ch < copy_channels; ++ch)
+                    *dst++ = half_to_float(*src++);
+                for (int ch = 0; ch < zero_channels; ++ch)
+                    *dst++ = 0;
+                src += skip_channels;
+            }
+        }
+        else if (dst_type == smcube_data_type::Float16)
+        {
+            // FP16 channels adjust
+            uint16_t* dst = (uint16_t*)dst_data;
+            for (size_t i = 0; i < data_items; ++i)
+            {
+                for (int ch = 0; ch < copy_channels; ++ch)
+                    *dst++ = *src++;
+                for (int ch = 0; ch < zero_channels; ++ch)
+                    *dst++ = 0;
+                src += skip_channels;
+            }
+        }
+    }
+    else if (lut.data_type == smcube_data_type::Float32)
+    {
+        // source is FP32
+        const float* src = (const float*)lut.data;
+        if (dst_type == smcube_data_type::Float16)
+        {
+            // FP32 -> FP16
+            uint16_t* dst = (uint16_t*)dst_data;
+            for (size_t i = 0; i < data_items; ++i)
+            {
+                for (int ch = 0; ch < copy_channels; ++ch)
+                    *dst++ = float_to_half(*src++);
+                for (int ch = 0; ch < zero_channels; ++ch)
+                    *dst++ = 0;
+                src += skip_channels;
+            }
+        }
+        else if (dst_type == smcube_data_type::Float32)
+        {
+            // FP32 channels adjust
+            float* dst = (float*)dst_data;
+            for (size_t i = 0; i < data_items; ++i)
+            {
+                for (int ch = 0; ch < copy_channels; ++ch)
+                    *dst++ = *src++;
+                for (int ch = 0; ch < zero_channels; ++ch)
+                    *dst++ = 0;
+                src += skip_channels;
+            }
+        }
+    }
+}
