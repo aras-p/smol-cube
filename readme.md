@@ -65,6 +65,29 @@ In order to use the library, compile `src/smol_cube.cpp` in your project, and in
 
 `smol-cube-conv` command line utility converts Resolve/Adobe `.cube` files into `.smcube` binary format.
 
+    smol-cube-conv [flags] <input file> ...
+
+Without extra arguments, this will convert given input .cube file(s) into .smcube files
+with lossless data filtering (making them more compressible), and keeping the data
+in full Float32 precision. Optional flags:
+
+* `--float16` convert data into Float16 (half precision floats)
+* `--rgba` expand data from RGB to RGB(A) (A being unused)
+* `--nofilter` do not perform data filtering to improve compressability
+
+
 ### smol-cube-viewer app
 
-`smol-cube-viewer` TBD.
+Tiny viewer that loads several pictures from under `tests/` folder and displays them using LUTs found under `tests/luts/` folder.
+Uses [Sokol libraries](https://github.com/floooh/sokol) for graphics/application and
+[stb_image.h](https://github.com/nothings/stb/blob/master/stb_image.h) for loading the photos.
+
+The pictures are displayed and the LUTs applied using a GPU 3D texture, using D3D11 (Windows) or Metal (macOS).
+
+![](/doc/shot-viewer.jpg)
+
+Left/Right keys switch between LUTs, Up/Down adjusts LUT application intensity. Space reloads the current LUT.
+
+The viewer assumes that the LUTs are meant for low dynamic range color grading, directly on sRGB color values.
+Some other LUTs might not be meant for that (e.g. Khronos PBR Neutral) and while they will "work", the results
+will not look pleasant.
