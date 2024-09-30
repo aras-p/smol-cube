@@ -43,7 +43,8 @@ half precision and zstd level 10, that becomes only 27 KB.
 ![](/doc/chart-pbrneutral-loadtime.png)
 
 Likewise, loading a simple binary format is much faster than loading from a text-based file. This library can
-load the text based .cube files too, and takes 55ms to load the Khronos PBR Neutral file (for comparison, OpenColorIO 2.3
+load the text based .cube files too, and takes 55ms to load the Khronos PBR Neutral file (for comparison,
+[OpenColorIO](https://github.com/AcademySoftwareFoundation/OpenColorIO) 2.3
 is even slower at loading this file: 302ms). However the load time can go down to 2ms for a .smcube half precision
 format. (the times are for loading the file *and* creating a GPU 3D texture with that data, on D3D11).
 
