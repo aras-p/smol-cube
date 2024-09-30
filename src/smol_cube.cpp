@@ -6,6 +6,11 @@
 #include <vector>
 #include <charconv>
 
+#ifdef __APPLE__
+// As of Xcode 15, C++17 from_chars for floats does not exist yet on macOS libraries :(
+#define NO_FLOAT_FROM_CHARS_HERE
+#endif
+
 
 // --------------------------------------------------------------------------
 // Float <-> Half conversion functions
@@ -851,6 +856,7 @@ void smcube_free(smcube_luts* handle)
     delete handle;
 }
 
+#if !defined(NO_FLOAT_FROM_CHARS_HERE)
 static inline bool is_whitespace(char c)
 {
     return c <= ' ';
@@ -888,13 +894,23 @@ static const char* parse_float(const char* p, const char* end, float fallback, f
     return res.ptr;
 }
 
-static const char* parse_floats(const char* p, const char* end, float fallback, float* dst, int count, bool& valid)
+static bool parse_3floats(const char* p, const char* end, float* dst)
 {
     valid = true;
     for (int i = 0; i < count; ++i)
-        p = parse_float(p, end, fallback, dst[i], valid);
-    return p;
+        p = parse_float(p, end, 0.0f, dst[i], valid);
+    return valid;
 }
+
+#else
+
+static bool parse_3floats(const char* p, const char* end, float* dst)
+{
+    int count = sscanf(p, "%f %f %f", dst+0, dst+1, dst+2);
+    return count == 3;
+}
+
+#endif
 
 
 // Resolve .cube file format notes:
@@ -989,8 +1005,7 @@ smcube_luts* smcube_load_from_file_resolve_cube(const char* path)
     while (true) {
         // note: first data line is already in buf
         float xyz[3];
-        bool xyzvalid = true;
-        parse_floats(buf, buf + strlen(buf), 0.0f, xyz, 3, xyzvalid);
+        bool xyzvalid = parse_3floats(buf, buf + strlen(buf), xyz);
         if (xyzvalid)
         {
             if (dim_1d > 0 && read_1d < dim_1d)
