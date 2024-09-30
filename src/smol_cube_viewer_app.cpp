@@ -291,7 +291,7 @@ static void sapp_init(void)
 	gr_tex_photo4 = load_image("tests/photo4.jpg");
 
 	// load LUT
-	gr_tex_lut = load_lut("tests/luts/tinyglade/Bluecine_75.cube", gr_uniforms.lut_size);
+	gr_tex_lut = load_lut("tests/luts/tinyglade-Bluecine_75.cube", gr_uniforms.lut_size);
 
 	// sampler
 	sg_sampler_desc smp_desc = {};
@@ -393,72 +393,72 @@ static void sapp_onevent(const sapp_event* evt)
 		if (evt->key_code == SAPP_KEYCODE_2)
 		{
 			sg_destroy_image(gr_tex_lut);
-			gr_tex_lut = load_lut("tests/luts/tinyglade/Bluecine_75.cube", gr_uniforms.lut_size);
+			gr_tex_lut = load_lut("tests/luts/tinyglade-Bluecine_75.cube", gr_uniforms.lut_size);
 		}
 		if (evt->key_code == SAPP_KEYCODE_3)
 		{
 			sg_destroy_image(gr_tex_lut);
-			gr_tex_lut = load_lut("tests/luts/tinyglade/Cold_Ice.cube", gr_uniforms.lut_size);
+			gr_tex_lut = load_lut("tests/luts/tinyglade-Cold_Ice.cube", gr_uniforms.lut_size);
 		}
 		if (evt->key_code == SAPP_KEYCODE_4)
 		{
 			sg_destroy_image(gr_tex_lut);
-			gr_tex_lut = load_lut("tests/luts/tinyglade/LUNA_COLOR.cube", gr_uniforms.lut_size);
+			gr_tex_lut = load_lut("tests/luts/tinyglade-LUNA_COLOR.cube", gr_uniforms.lut_size);
 		}
 		if (evt->key_code == SAPP_KEYCODE_R)
 		{
 			sg_destroy_image(gr_tex_lut);
-			gr_tex_lut = load_lut("tests/luts/tinyglade/LUNA_COLOR_float3.smcube", gr_uniforms.lut_size);
+			gr_tex_lut = load_lut("tests/luts/tinyglade-LUNA_COLOR_float3.smcube", gr_uniforms.lut_size);
 		}
 		if (evt->key_code == SAPP_KEYCODE_F)
 		{
 			sg_destroy_image(gr_tex_lut);
-			gr_tex_lut = load_lut("tests/luts/tinyglade/LUNA_COLOR_half4.smcube", gr_uniforms.lut_size);
+			gr_tex_lut = load_lut("tests/luts/tinyglade-LUNA_COLOR_half4.smcube", gr_uniforms.lut_size);
 		}
 		if (evt->key_code == SAPP_KEYCODE_5)
 		{
 			sg_destroy_image(gr_tex_lut);
-			gr_tex_lut = load_lut("tests/luts/tinyglade/Sam_Kolder.cube", gr_uniforms.lut_size);
+			gr_tex_lut = load_lut("tests/luts/tinyglade-Sam_Kolder.cube", gr_uniforms.lut_size);
 		}
 		if (evt->key_code == SAPP_KEYCODE_6)
 		{
 			sg_destroy_image(gr_tex_lut);
-			gr_tex_lut = load_lut("tests/luts/blender/pbrNeutral.cube", gr_uniforms.lut_size);
+			gr_tex_lut = load_lut("tests/luts/khronos-pbrNeutral.cube", gr_uniforms.lut_size);
 		}
 		if (evt->key_code == SAPP_KEYCODE_T)
 		{
 			sg_destroy_image(gr_tex_lut);
-			gr_tex_lut = load_lut("tests/luts/blender/pbrNeutral_float3.smcube", gr_uniforms.lut_size);
+			gr_tex_lut = load_lut("tests/luts/khronos-pbrNeutral_float3.smcube", gr_uniforms.lut_size);
 		}
 		if (evt->key_code == SAPP_KEYCODE_G)
 		{
 			sg_destroy_image(gr_tex_lut);
-			gr_tex_lut = load_lut("tests/luts/blender/pbrNeutral_half4.smcube", gr_uniforms.lut_size);
+			gr_tex_lut = load_lut("tests/luts/khronos-pbrNeutral_half4.smcube", gr_uniforms.lut_size);
 		}
 		if (evt->key_code == SAPP_KEYCODE_B)
 		{
 			sg_destroy_image(gr_tex_lut);
-			gr_tex_lut = load_lut("tests/luts/blender/pbrNeutral_half4_nofilter.smcube", gr_uniforms.lut_size);
+			gr_tex_lut = load_lut("tests/luts/khronos-pbrNeutral_half4_nofilter.smcube", gr_uniforms.lut_size);
 		}
 		if (evt->key_code == SAPP_KEYCODE_7)
 		{
 			sg_destroy_image(gr_tex_lut);
-			gr_tex_lut = load_lut("tests/luts/davinci/DCI-P3 Kodak 2383 D65.cube", gr_uniforms.lut_size);
+			gr_tex_lut = load_lut("tests/luts/resolve-DCI-P3 Kodak 2383 D65.cube", gr_uniforms.lut_size);
 		}
 		if (evt->key_code == SAPP_KEYCODE_8)
 		{
 			sg_destroy_image(gr_tex_lut);
-			gr_tex_lut = load_lut("tests/luts/davinci/LMT ACES v0.1.1.cube", gr_uniforms.lut_size);
+			gr_tex_lut = load_lut("tests/luts/resolve-LMT ACES v0.1.1.cube", gr_uniforms.lut_size);
 		}
 		if (evt->key_code == SAPP_KEYCODE_I)
 		{
 			sg_destroy_image(gr_tex_lut);
-			gr_tex_lut = load_lut("tests/luts/davinci/LMT ACES v0.1.1_float3.smcube", gr_uniforms.lut_size);
+			gr_tex_lut = load_lut("tests/luts/resolve-LMT ACES v0.1.1_float3.smcube", gr_uniforms.lut_size);
 		}
 		if (evt->key_code == SAPP_KEYCODE_K)
 		{
 			sg_destroy_image(gr_tex_lut);
-			gr_tex_lut = load_lut("tests/luts/davinci/LMT ACES v0.1.1_half4.smcube", gr_uniforms.lut_size);
+			gr_tex_lut = load_lut("tests/luts/resolve-LMT ACES v0.1.1_half4.smcube", gr_uniforms.lut_size);
 		}
 	}
 }
