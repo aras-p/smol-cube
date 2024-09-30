@@ -37,7 +37,7 @@ use half-precision LUTs at runtime anyway.
 ![](/doc/chart-pbrneutral-size.png)
 
 Taking Khronos [PBR Neutral LUT](https://github.com/KhronosGroup/ToneMapping/tree/main/PBR_Neutral) as an example,
-the raw .cube file size is 5.4MB. Even if we compress that with zsd level 10, it is still 543 KB. With smol-cube,
+the raw .cube file size is 5.4MB. Even if we compress that with [zstd](http://www.zstd.net/) level 10, it is still 543 KB. With smol-cube,
 half precision and zstd level 10, that becomes only 27 KB.
 
 ![](/doc/chart-pbrneutral-loadtime.png)
