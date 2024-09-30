@@ -25,8 +25,8 @@ set_property(TARGET smol-cube-viewer PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreade
 target_compile_definitions(smol-cube-conv PRIVATE _CRT_SECURE_NO_DEPRECATE _CRT_NONSTDC_NO_WARNINGS NOMINMAX)
 target_compile_definitions(smol-cube-viewer PRIVATE _CRT_SECURE_NO_DEPRECATE _CRT_NONSTDC_NO_WARNINGS NOMINMAX)
 
-
-if((CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU") AND (CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64"))
+if(((CMAKE_CXX_COMPILER_ID MATCHES "Clang") OR (CMAKE_CXX_COMPILER_ID MATCHES "GNU")) AND
+	((CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64") OR (CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")))
 	target_compile_options(smol-cube-conv PRIVATE -msse4.1)
 	target_compile_options(smol-cube-viewer PRIVATE -msse4.1)
 endif()
@@ -39,4 +39,7 @@ if (APPLE)
 		"-framework MetalKit"
 		"-framework QuartzCore"
 	)
+endif ()
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+	target_link_libraries(smol-cube-viewer PRIVATE X11 Xi Xcursor GL)
 endif ()

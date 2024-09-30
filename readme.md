@@ -60,6 +60,7 @@ The library itself is written in C++, and requires C++ 17 or later. It provides 
 - Access and inspection of the loaded LUT data.
 
 In order to use the library, compile `src/smol_cube.cpp` in your project, and include `src/smol_cube.h`.
+If building with clang/gcc for x64, compile with SSE4.1 or later (`-msse4.1`).
 
 License is either MIT or Unlicense, whichever is more convenient for you.
 
