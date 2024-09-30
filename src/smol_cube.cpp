@@ -1,4 +1,7 @@
-﻿#include "smol_cube.h"
+﻿// SPDX-License-Identifier: MIT OR Unlicense
+// smol-cube: https://github.com/aras-p/smol-cube
+
+#include "smol_cube.h"
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>

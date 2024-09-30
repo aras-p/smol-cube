@@ -47,7 +47,6 @@ load the text based .cube files too, and takes 55ms to load the Khronos PBR Neut
 is even slower at loading this file: 302ms). However the load time can go down to 2ms for a .smcube half precision
 format. (the times are for loading the file *and* creating a GPU 3D texture with that data, on D3D11).
 
-
 ### smol-cube C++ library
 
 The library itself is written in C++, and requires C++ 17 or later. It provides functions for:
@@ -60,6 +59,8 @@ The library itself is written in C++, and requires C++ 17 or later. It provides 
 - Access and inspection of the loaded LUT data.
 
 In order to use the library, compile `src/smol_cube.cpp` in your project, and include `src/smol_cube.h`.
+
+License is either MIT or Unlicense, whichever is more convenient for you.
 
 ### smol-cube-conv command line tool
 

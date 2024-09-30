@@ -1,4 +1,7 @@
-﻿#pragma once
+﻿// SPDX-License-Identifier: MIT OR Unlicense
+// smol-cube: https://github.com/aras-p/smol-cube
+
+#pragma once
 
 #include <stddef.h>
 #include <stdint.h>

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT OR Unlicense
+// smol-cube: https://github.com/aras-p/smol-cube
+
 #include "smol_cube.h"
 #include <string>
 #include <filesystem>
