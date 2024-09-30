@@ -5,11 +5,10 @@
     {
       "type": "default",
       "project": "CMakeLists.txt",
-      "projectTarget": "smol-cube.exe",
-      "name": "smol-cube.exe",
+      "projectTarget": "smol-cube-conv.exe",
+      "name": "smol-cube-conv.exe",
       "currentDir": "${workspaceRoot}",
       "args": [
-        "--filter",
         "--float16",
         "--rgba",
         "--verbose",

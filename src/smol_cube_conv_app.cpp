@@ -35,18 +35,25 @@ int main(int argc, const char** argv)
 	const auto& input_files = args.pos_args();
 	if (input_files.size() <= 1)
 	{
-		printf("Usage: smol-cube <input .cube file>\n");
+		printf("Usage: smol-cube-conv [flags] <input file> ...\n");
+		printf("\n");
+		printf("Without extra arguments, this will convert given input .cube file(s) into .smcube files\n");
+		printf("with lossless data filtering (making them more compressible), and keeping the data\n");
+		printf("in full Float32 precision. Optional flags:\n");
+		printf("\n");
+		printf("--float16     Convert data into Float16 (half precision floats)\n");
+		printf("--rgba        Expand data from RGB to RGB(A) (A being unused)\n");
+		printf("--nofilter    Do not perform data filtering to improve compressability\n");
 		return 1;
 	}
 
-	const bool filter = args["filter"];
+	const bool nofilter = args["nofilter"];
 	const bool float16 = args["float16"];
 	const bool rgba = args["rgba"];
 	const bool verbose = args["verbose"];
 	const bool roundtrip = args["roundtrip"];
 
-	uint32_t save_flags = smcube_save_flag_None;
-	if (filter) save_flags |= smcube_save_flag_FilterData;
+	uint32_t save_flags = nofilter ? smcube_save_flag_None : smcube_save_flag_FilterData;
 	if (float16) save_flags |= smcube_save_flag_ConvertToFloat16;
 	if (rgba) save_flags |= smcube_save_flag_ExpandTo4Channels;
 
@@ -95,7 +102,7 @@ int main(int argc, const char** argv)
 		output_file += '_';
 		output_file += float16 ? "half" : "float";
 		output_file += rgba ? "4" : "3";
-		if (!filter)
+		if (nofilter)
 			output_file += "_nofilter";
 		output_file += ".smcube";
 		if (verbose)

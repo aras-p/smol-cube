@@ -11,6 +11,10 @@ and [Resolve Cafe Cube LUT info](https://resolve.cafe/developers/luts/) (2023).
 However, the `.cube` file format is purely **text based**. The whole 3D lookup texture is several hundred thousand
 or several million floating pointer numbers is ASCII format!
 
+> Most other LUT formats are also text based: Houdini .hdl, Imageworks .spi3d, TrueLight .cub, Cinespace .csp, Discreet Flame .3dl, Inventor .vf.
+> Academy/ASC Common LUT Format (.clf) and Autodesk Color Transform Format (.ctf) are XML, even! Among them, only Houdini .hdl has a "binary form" that,
+> curiously, is big-endian.
+
 ### smol-cube: load and save LUT files from ASCII .cube, or a small binary format
 
 This library provides a simple binary `.smcube` format. It has the following features:
@@ -25,7 +29,9 @@ This library provides a simple binary `.smcube` format. It has the following fea
   [Blosc bytedelta](https://www.blosc.org/posts/bytedelta-enhance-compression-toolset/) for details.
 - Similar to Resolve .cube format, it can have multiple LUTs (e.g. 1D shaper LUT followed by 3D LUT).
 
-The library itself is written in C++, and requires C++ 17. It provides functions for:
+### smol-cube C++ library
+
+The library itself is written in C++, and requires C++ 11 or later. It provides functions for:
 
 - Loading LUT(s) from `.cube` or `.smcube` files: `smcube_luts_load_from_file`.
 - Saving LUT(s) into `.smcube` file: `smcube_luts_save_to_file_smcube`. This can convert the float32 data down into float16,
@@ -33,6 +39,18 @@ The library itself is written in C++, and requires C++ 17. It provides functions
 - Saving LUT(s) into `.cube` file: `smcube_luts_save_to_file_resolve_cube`. Note that this is limited to what Resolve .cube format
   can do, i.e. only 32 bit float data, only 3 channels, and the file can contain one 1D LUT, one 3D LUT, or one 1D + one 3D LUT only.
 - Access and inspection of the loaded LUT data.
+
+In order to use the library, compile `src/smol_cube.cpp` in your project, and include `src/smol_cube.h`.
+
+### smol-cube-conv command line tool
+
+`smol-cube-conv` command line utility converts Resolve/Adobe `.cube` files into `.smcube` binary format.
+
+### smol-cube-viewer app
+
+`smol-cube-viewer` TBD.
+
+
 
 
 | LUT                    | LUT size | File size, KB  | Zipped size, KB | Load time, ms | OCIO load time, ms |
