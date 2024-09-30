@@ -2,5 +2,5 @@
 out/*
 build/*
 .DS_Store
-tests/luts/*.out.cube
-tests/luts/*/*.out.cube
+*.cube.txt
+*.smcube

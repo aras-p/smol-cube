@@ -175,7 +175,7 @@ int main(int argc, const char** argv)
 						}
 					}
 				}
-				output_file = input_file.substr(0, last_dot_pos) + ".out.cube";
+				output_file = input_file.substr(0, last_dot_pos) + ".cube.txt";
 				if (verbose)
 				{
 					printf("- Output roundtrip file '%s'\n", output_file.c_str());

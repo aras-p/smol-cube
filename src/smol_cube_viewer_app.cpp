@@ -1,5 +1,6 @@
 #include "smol_cube.h"
 #include <string>
+#include <filesystem>
 
 #define SOKOL_IMPL
 #if defined(__APPLE__)
@@ -18,6 +19,25 @@
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_ONLY_JPEG
 #include "../libs/stb_image.h"
+
+static std::vector<std::string> s_lut_files;
+static int s_lut_index = 0;
+
+static std::vector<std::string> find_lut_files(const std::string& directory, const std::string& extension1, const std::string& extension2)
+{
+	std::vector<std::string> files;
+	for (const auto& entry : std::filesystem::directory_iterator(directory))
+	{
+		if (!entry.is_regular_file())
+			continue;
+		auto entry_ext = entry.path().extension();
+		if (entry_ext == extension1 || entry_ext == extension2)
+		{
+			files.push_back(entry.path().string());
+		}
+	}
+	return files;
+}
 
 static const char* kSokolVertexSource =
 #if defined(SOKOL_METAL) || defined(SOKOL_D3D11)
@@ -157,7 +177,10 @@ static sg_image load_lut(const char* path, float& lut_size)
 	uint64_t t0 = stm_now();
 	smcube_luts* luts = smcube_load_from_file(path);
 	if (luts == nullptr)
-		return tex;
+	{
+		slog_func("smol-cube", 1, 0, "Failed to load LUT file", 1, path, nullptr);
+		return create_empty_lut(lut_size);
+	}
 
 	for (size_t li = 0, ln = smcube_get_count(luts); li != ln; ++li)
 	{
@@ -251,12 +274,10 @@ static sg_image load_lut(const char* path, float& lut_size)
 		s_cur_lut_load_time = float(stm_ms(stm_diff(t1, t0)));
 		s_cur_lut_size = sizex;
 
-		const char* fnamepos = strrchr(path, '/');
-		if (fnamepos == nullptr)
-			fnamepos = path;
-		else
-			fnamepos++;
-		s_cur_lut_title = fnamepos;
+		s_cur_lut_title = path;
+		size_t fnamepos = s_cur_lut_title.find_last_of("/\\");
+		if (fnamepos != std::string::npos)
+			s_cur_lut_title = s_cur_lut_title.substr(fnamepos + 1);
 		break;
 	}
 	smcube_free(luts);
@@ -276,6 +297,8 @@ struct frame_uniforms {
 };
 static frame_uniforms gr_uniforms = { 1.0f, 4.0f };
 
+static bool s_do_quit = false;
+
 static void sapp_init(void)
 {
 	// graphics
@@ -284,6 +307,13 @@ static void sapp_init(void)
 	setup_desc.logger.func = slog_func;
 	sg_setup(&setup_desc);
 
+	s_lut_files = find_lut_files("./tests/luts", ".cube", ".smcube");
+	if (s_lut_files.empty())
+	{
+		s_do_quit = true;
+		return;
+	}
+
 	// load images
 	gr_tex_photo1 = load_image("tests/photo1.jpg");
 	gr_tex_photo2 = load_image("tests/photo2.jpg");
@@ -291,7 +321,8 @@ static void sapp_init(void)
 	gr_tex_photo4 = load_image("tests/photo4.jpg");
 
 	// load LUT
-	gr_tex_lut = load_lut("tests/luts/tinyglade-Bluecine_75.cube", gr_uniforms.lut_size);
+	s_lut_index = s_lut_files.size() - 1;
+	gr_tex_lut = load_lut(s_lut_files[s_lut_index].c_str(), gr_uniforms.lut_size);
 
 	// sampler
 	sg_sampler_desc smp_desc = {};
@@ -334,8 +365,13 @@ static void sapp_init(void)
 
 static void sapp_frame(void)
 {
+	if (s_do_quit)
+	{
+		sapp_quit();
+		return;
+	}
 	char buf[1000];
-	snprintf(buf, sizeof(buf), "%s. Current LUT: %s (%i%%) size %i loaded in %.2fms", kBaseWindowTitle, s_cur_lut_title.c_str(), (int)(gr_uniforms.lut_intensity * 100.0f), s_cur_lut_size, s_cur_lut_load_time);
+	snprintf(buf, sizeof(buf), "%s. LUT %i/%i: %s size %i load %.2fms (%i%%)", kBaseWindowTitle, s_lut_index+1, int(s_lut_files.size()), s_cur_lut_title.c_str(), s_cur_lut_size, s_cur_lut_load_time, (int)(gr_uniforms.lut_intensity * 100.0f));
 	sapp_set_window_title(buf);
 
 	sg_pass pass = {};
@@ -365,6 +401,15 @@ static void sapp_cleanup(void)
 	sg_shutdown();
 }
 
+static void reload_lut()
+{
+	sg_destroy_image(gr_tex_lut);
+	if (s_lut_index == -1)
+		gr_tex_lut = create_empty_lut(gr_uniforms.lut_size);
+	else
+		gr_tex_lut = load_lut(s_lut_files[s_lut_index].c_str(), gr_uniforms.lut_size);
+}
+
 static void sapp_onevent(const sapp_event* evt)
 {
 	if (evt->type == SAPP_EVENTTYPE_KEY_DOWN)
@@ -385,80 +430,28 @@ static void sapp_onevent(const sapp_event* evt)
 			if (gr_uniforms.lut_intensity < 0.0f)
 				gr_uniforms.lut_intensity = 0.0f;
 		}
+		if (evt->key_code == SAPP_KEYCODE_LEFT)
+		{
+			s_lut_index--;
+			if (s_lut_index < -1)
+				s_lut_index = -1;
+			reload_lut();
+		}
+		if (evt->key_code == SAPP_KEYCODE_RIGHT)
+		{
+			s_lut_index++;
+			if (s_lut_index >= s_lut_files.size())
+				s_lut_index = int(s_lut_files.size())-1;
+			reload_lut();
+		}
+		if (evt->key_code == SAPP_KEYCODE_SPACE)
+		{
+			reload_lut();
+		}
 		if (evt->key_code == SAPP_KEYCODE_1)
 		{
-			sg_destroy_image(gr_tex_lut);
-			gr_tex_lut = create_empty_lut(gr_uniforms.lut_size);
-		}
-		if (evt->key_code == SAPP_KEYCODE_2)
-		{
-			sg_destroy_image(gr_tex_lut);
-			gr_tex_lut = load_lut("tests/luts/tinyglade-Bluecine_75.cube", gr_uniforms.lut_size);
-		}
-		if (evt->key_code == SAPP_KEYCODE_3)
-		{
-			sg_destroy_image(gr_tex_lut);
-			gr_tex_lut = load_lut("tests/luts/tinyglade-Cold_Ice.cube", gr_uniforms.lut_size);
-		}
-		if (evt->key_code == SAPP_KEYCODE_4)
-		{
-			sg_destroy_image(gr_tex_lut);
-			gr_tex_lut = load_lut("tests/luts/tinyglade-LUNA_COLOR.cube", gr_uniforms.lut_size);
-		}
-		if (evt->key_code == SAPP_KEYCODE_R)
-		{
-			sg_destroy_image(gr_tex_lut);
-			gr_tex_lut = load_lut("tests/luts/tinyglade-LUNA_COLOR_float3.smcube", gr_uniforms.lut_size);
-		}
-		if (evt->key_code == SAPP_KEYCODE_F)
-		{
-			sg_destroy_image(gr_tex_lut);
-			gr_tex_lut = load_lut("tests/luts/tinyglade-LUNA_COLOR_half4.smcube", gr_uniforms.lut_size);
-		}
-		if (evt->key_code == SAPP_KEYCODE_5)
-		{
-			sg_destroy_image(gr_tex_lut);
-			gr_tex_lut = load_lut("tests/luts/tinyglade-Sam_Kolder.cube", gr_uniforms.lut_size);
-		}
-		if (evt->key_code == SAPP_KEYCODE_6)
-		{
-			sg_destroy_image(gr_tex_lut);
-			gr_tex_lut = load_lut("tests/luts/khronos-pbrNeutral.cube", gr_uniforms.lut_size);
-		}
-		if (evt->key_code == SAPP_KEYCODE_T)
-		{
-			sg_destroy_image(gr_tex_lut);
-			gr_tex_lut = load_lut("tests/luts/khronos-pbrNeutral_float3.smcube", gr_uniforms.lut_size);
-		}
-		if (evt->key_code == SAPP_KEYCODE_G)
-		{
-			sg_destroy_image(gr_tex_lut);
-			gr_tex_lut = load_lut("tests/luts/khronos-pbrNeutral_half4.smcube", gr_uniforms.lut_size);
-		}
-		if (evt->key_code == SAPP_KEYCODE_B)
-		{
-			sg_destroy_image(gr_tex_lut);
-			gr_tex_lut = load_lut("tests/luts/khronos-pbrNeutral_half4_nofilter.smcube", gr_uniforms.lut_size);
-		}
-		if (evt->key_code == SAPP_KEYCODE_7)
-		{
-			sg_destroy_image(gr_tex_lut);
-			gr_tex_lut = load_lut("tests/luts/resolve-DCI-P3 Kodak 2383 D65.cube", gr_uniforms.lut_size);
-		}
-		if (evt->key_code == SAPP_KEYCODE_8)
-		{
-			sg_destroy_image(gr_tex_lut);
-			gr_tex_lut = load_lut("tests/luts/resolve-LMT ACES v0.1.1.cube", gr_uniforms.lut_size);
-		}
-		if (evt->key_code == SAPP_KEYCODE_I)
-		{
-			sg_destroy_image(gr_tex_lut);
-			gr_tex_lut = load_lut("tests/luts/resolve-LMT ACES v0.1.1_float3.smcube", gr_uniforms.lut_size);
-		}
-		if (evt->key_code == SAPP_KEYCODE_K)
-		{
-			sg_destroy_image(gr_tex_lut);
-			gr_tex_lut = load_lut("tests/luts/resolve-LMT ACES v0.1.1_half4.smcube", gr_uniforms.lut_size);
+			s_lut_index = -1;
+			reload_lut();
 		}
 	}
 }
@@ -466,6 +459,7 @@ static void sapp_onevent(const sapp_event* evt)
 sapp_desc sokol_main(int argc, char* argv[])
 {
 	(void)argc; (void)argv;
+
 	stm_setup();
 
 	// figure out where is the data folder
