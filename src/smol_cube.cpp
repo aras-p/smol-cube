@@ -4,6 +4,7 @@
 #include <string.h>
 #include <string>
 #include <vector>
+#include <charconv>
 
 
 // --------------------------------------------------------------------------
@@ -789,6 +790,52 @@ void smcube_luts_free(smcube_luts* handle)
     delete handle;
 }
 
+static inline bool is_whitespace(char c)
+{
+    return c <= ' ';
+}
+
+static const char* skip_whitespace(const char* p, const char* end)
+{
+    while (p < end && is_whitespace(*p))
+        ++p;
+    return p;
+}
+
+static const char* skip_plus(const char* p, const char* end)
+{
+    if (p < end && *p == '+')
+        ++p;
+    return p;
+}
+
+static const char* parse_float(const char* p, const char* end, float fallback, float& dst, bool& valid)
+{
+    p = skip_whitespace(p, end);
+    p = skip_plus(p, end);
+    std::from_chars_result res = std::from_chars(p, end, dst);
+    if (res.ec == std::errc::invalid_argument || res.ec == std::errc::result_out_of_range) {
+        dst = fallback;
+        valid = false;
+    }
+    else if (res.ptr < end && !is_whitespace(*res.ptr)) {
+        // If there are trailing non-space characters, it is not a valid number
+        dst = fallback;
+        valid = false;
+        return p;
+    }
+    return res.ptr;
+}
+
+static const char* parse_floats(const char* p, const char* end, float fallback, float* dst, int count, bool& valid)
+{
+    valid = true;
+    for (int i = 0; i < count; ++i)
+        p = parse_float(p, end, fallback, dst[i], valid);
+    return p;
+}
+
+
 // Resolve .cube file format notes:
 // https://resolve.cafe/developers/luts/
 
@@ -880,20 +927,23 @@ smcube_luts* smcube_luts_load_from_file_resolve_cube(const char* path)
     size_t read_1d = 0, read_3d = 0;
     while (true) {
         // note: first data line is already in buf
-        float x, y, z;
-        if (3 == sscanf(buf, "%f %f %f", &x, &y, &z)) {
+        float xyz[3];
+        bool xyzvalid = true;
+        parse_floats(buf, buf + strlen(buf), 0.0f, xyz, 3, xyzvalid);
+        if (xyzvalid)
+        {
             if (dim_1d > 0 && read_1d < dim_1d)
             {
-                ((float*)lut1d.data)[read_1d * 3 + 0] = x;
-                ((float*)lut1d.data)[read_1d * 3 + 1] = y;
-                ((float*)lut1d.data)[read_1d * 3 + 2] = z;
+                ((float*)lut1d.data)[read_1d * 3 + 0] = xyz[0];
+                ((float*)lut1d.data)[read_1d * 3 + 1] = xyz[1];
+                ((float*)lut1d.data)[read_1d * 3 + 2] = xyz[2];
                 ++read_1d;
             }
             else if (dim_3d > 0 && read_3d < dim_3d * dim_3d * dim_3d)
             {
-                ((float*)lut3d.data)[read_3d * 3 + 0] = x;
-                ((float*)lut3d.data)[read_3d * 3 + 1] = y;
-                ((float*)lut3d.data)[read_3d * 3 + 2] = z;
+                ((float*)lut3d.data)[read_3d * 3 + 0] = xyz[0];
+                ((float*)lut3d.data)[read_3d * 3 + 1] = xyz[1];
+                ((float*)lut3d.data)[read_3d * 3 + 2] = xyz[2];
                 ++read_3d;
             }
             else

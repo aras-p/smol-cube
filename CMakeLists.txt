@@ -16,8 +16,8 @@ add_executable (smol-cube-viewer
 	src/smol_cube.h
 )
 
-set_property(TARGET smol-cube-conv PROPERTY CXX_STANDARD 11)
-set_property(TARGET smol-cube-viewer PROPERTY CXX_STANDARD 11)
+set_property(TARGET smol-cube-conv PROPERTY CXX_STANDARD 17)
+set_property(TARGET smol-cube-viewer PROPERTY CXX_STANDARD 17)
 
 set_property(TARGET smol-cube-conv PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 set_property(TARGET smol-cube-viewer PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")

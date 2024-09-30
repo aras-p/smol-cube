@@ -31,7 +31,7 @@ This library provides a simple binary `.smcube` format. It has the following fea
 
 ### smol-cube C++ library
 
-The library itself is written in C++, and requires C++ 11 or later. It provides functions for:
+The library itself is written in C++, and requires C++ 17 or later. It provides functions for:
 
 - Loading LUT(s) from `.cube` or `.smcube` files: `smcube_luts_load_from_file`.
 - Saving LUT(s) into `.smcube` file: `smcube_luts_save_to_file_smcube`. This can convert the float32 data down into float16,
@@ -55,9 +55,9 @@ In order to use the library, compile `src/smol_cube.cpp` in your project, and in
 
 | LUT                    | LUT size | File size, KB  | Zipped size, KB | Load time, ms | OCIO load time, ms |
 |------------------------|---------:|---------------:|----------------:|--------------:|-------------------:|
-|LUNA_COLOR.cube         | 33       |         1193   |             459 |          20.5 |               61.4 |
+|LUNA_COLOR.cube         | 33       |         1193   |             459 |          11.7 |               61.4 |
 |LUNA_COLOR.smcube       | 33       |          421   |             246 |           0.7 |                    |
 |LUNA_COLOR.smcube half4 | 33       |          281   |              79 |           0.5 |                    |
-|pbrNeutral.cube         | 57       |         5367   |             759 |          91.9 |              302.5 |
+|pbrNeutral.cube         | 57       |         5367   |             759 |          54.7 |              302.5 |
 |pbrNeutral.smcube       | 57       |         2170   |             197 |           4.5 |                    |
 |pbrNeutral.smcube half4 | 57       |         1447   |              44 |           2.5 |                    |

@@ -479,14 +479,14 @@ sapp_desc sokol_main(int argc, char* argv[])
 }
 
 // PC, timings in ms:
-//                                      our .cube	OCIO  smcube float3   half3 half4
-// Bluecine_75.cube:			size 33      17.5	58.1
-// Cold_Ice.cube:				size 16       2.2    7.3
-// LUNA_COLOR.cube:				size 33      20.5	61.4            0.7     0.5   0.5
-// Sam_Kolder.cube:				size 33      16.2   55.0
-// pbrNeutral.cube:				size 57      91.9  302.5            4.5           2.5
-// DCI-P3 Kodak 2383 D65.cube:	size 33      17.5   56.9
-// LMT ACES v0.1.1.cube:		size 65     178.2  516.1            6.2     3.5   3.5
+//                                      our .cube  OCIO  smcube float3   half3 half4
+// Bluecine_75.cube:			size 33      10.4  58.1
+// Cold_Ice.cube:				size 16       1.3   7.3
+// LUNA_COLOR.cube:				size 33      11.7  61.4            0.7     0.5   0.5
+// Sam_Kolder.cube:				size 33       9.8  55.0
+// pbrNeutral.cube:				size 57      54.7 302.5            4.5           2.5
+// DCI-P3 Kodak 2383 D65.cube:	size 33       9.5  56.9
+// LMT ACES v0.1.1.cube:		size 65     116.7 516.1            6.2     3.5   3.5
 
 // OCIO: https://gist.github.com/aras-p/df0c7310e87daf471eb321291dda3761
 // - does not support TITLE tag (throws exception)
