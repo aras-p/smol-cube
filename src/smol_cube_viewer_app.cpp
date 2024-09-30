@@ -1,6 +1,7 @@
 #include "smol_cube.h"
 #include <string>
 #include <filesystem>
+#include <algorithm>
 
 #define SOKOL_IMPL
 #if defined(__APPLE__)
@@ -36,6 +37,7 @@ static std::vector<std::string> find_lut_files(const std::string& directory, con
 			files.push_back(entry.path().string());
 		}
 	}
+	std::sort(files.begin(), files.end(), [](const std::string& a, const std::string& b) { return a < b; });
 	return files;
 }
 
