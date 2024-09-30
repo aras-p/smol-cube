@@ -492,6 +492,17 @@ static void UnFilterByteDelta(const uint8_t* src, uint8_t* dst, int channels, si
 // - u32x3: dimensions x, y, z
 // - data
 
+struct smcube_lut
+{
+    int channels = 3; // 3=RGB, 4=RGBA
+    int dimension = 3; // 1=1D, 2=2D, 3=3D
+    smcube_data_type data_type = smcube_data_type::Float32;
+    int size_x = 1;
+    int size_y = 1;
+    int size_z = 1;
+    void* data = nullptr;
+};
+
 size_t smcube_data_type_get_size(smcube_data_type type)
 {
     switch (type) {
@@ -499,16 +510,6 @@ size_t smcube_data_type_get_size(smcube_data_type type)
     case smcube_data_type::Float16: return 2;
     default: assert(false); return 0;
     }
-}
-
-size_t smcube_lut_get_data_size(const smcube_lut& lut)
-{
-    size_t item_size = smcube_data_type_get_size(lut.data_type) * lut.channels;
-    size_t item_count = 1;
-    if (lut.dimension >= 1) item_count *= lut.size_x;
-    if (lut.dimension >= 2) item_count *= lut.size_y;
-    if (lut.dimension >= 3) item_count *= lut.size_z;
-    return item_count * item_size;
 }
 
 struct smcube_file_alut_header
@@ -661,6 +662,66 @@ smcube_lut smcube_luts_get_lut(const smcube_luts* handle, size_t index)
     return handle->luts[index];
 }
 
+int smcube_luts_get_lut_channels(const smcube_luts* handle, size_t index)
+{
+    if (handle == nullptr || index >= handle->luts.size())
+        return 0;
+    return handle->luts[index].channels;
+}
+int smcube_luts_get_lut_dimension(const smcube_luts* handle, size_t index)
+{
+    if (handle == nullptr || index >= handle->luts.size())
+        return 0;
+    return handle->luts[index].dimension;
+}
+smcube_data_type smcube_luts_get_lut_data_type(const smcube_luts* handle, size_t index)
+{
+    if (handle == nullptr || index >= handle->luts.size())
+        return smcube_data_type::Float32;
+    return handle->luts[index].data_type;
+}
+int smcube_luts_get_lut_size_x(const smcube_luts* handle, size_t index)
+{
+    if (handle == nullptr || index >= handle->luts.size())
+        return 0;
+    return handle->luts[index].size_x;
+}
+int smcube_luts_get_lut_size_y(const smcube_luts* handle, size_t index)
+{
+    if (handle == nullptr || index >= handle->luts.size())
+        return 0;
+    return handle->luts[index].size_y;
+}
+int smcube_luts_get_lut_size_z(const smcube_luts* handle, size_t index)
+{
+    if (handle == nullptr || index >= handle->luts.size())
+        return 0;
+    return handle->luts[index].size_z;
+}
+const void* smcube_luts_get_lut_data(const smcube_luts* handle, size_t index)
+{
+    if (handle == nullptr || index >= handle->luts.size())
+        return 0;
+    return handle->luts[index].data;
+}
+
+static size_t lut_get_data_size(const smcube_lut& lut)
+{
+    size_t item_size = smcube_data_type_get_size(lut.data_type) * lut.channels;
+    size_t item_count = 1;
+    if (lut.dimension >= 1) item_count *= lut.size_x;
+    if (lut.dimension >= 2) item_count *= lut.size_y;
+    if (lut.dimension >= 3) item_count *= lut.size_z;
+    return item_count * item_size;
+}
+
+size_t smcube_lut_get_data_size(const smcube_luts* handle, size_t index)
+{
+    if (handle == nullptr || index >= handle->luts.size())
+        return 0;
+    return lut_get_data_size(handle->luts[index]);
+}
+
 static bool str_ends_with(const char* str, const char* suffix)
 {
     size_t str_len = strlen(str);
@@ -753,7 +814,7 @@ smcube_luts* smcube_luts_load_from_file_smcube(const char* path)
             lut.size_x = head.size_x;
             lut.size_y = head.size_y;
             lut.size_z = head.size_z;
-            size_t lut_data_size = smcube_lut_get_data_size(lut);
+            size_t lut_data_size = lut_get_data_size(lut);
             if (chunk_len - sizeof(smcube_file_alut_header) != lut_data_size)
             {
                 smcube_luts_free(luts);
@@ -1010,7 +1071,7 @@ bool smcube_luts_save_to_file_resolve_cube(const char* path, const smcube_luts* 
         if (!is_lut_supported_by_resolve_cube(lut))
             continue;
         const float* data = (const float*)lut.data;
-        const float* data_end = data + smcube_lut_get_data_size(lut) / sizeof(float);
+        const float* data_end = data + lut_get_data_size(lut) / sizeof(float);
         while (data < data_end)
         {
             fprintf(f, "%.8f %.8f %.8f\n", data[0], data[1], data[2]);

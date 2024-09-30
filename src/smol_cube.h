@@ -18,22 +18,7 @@ enum smcube_save_flags
 	smcube_save_flag_ExpandTo4Channels = (1 << 2),
 };
 
-struct smcube_lut
-{
-	int channels = 3; // 3=RGB, 4=RGBA
-	int dimension = 3; // 1=1D, 2=2D, 3=3D
-	smcube_data_type data_type = smcube_data_type::Float32;
-	int size_x = 1;
-	int size_y = 1;
-	int size_z = 1;
-	void* data = nullptr;
-};
-
 struct smcube_luts;
-
-size_t smcube_data_type_get_size(smcube_data_type type);
-size_t smcube_lut_get_data_size(const smcube_lut& lut);
-
 
 smcube_luts* smcube_luts_load_from_file(const char* path);
 smcube_luts* smcube_luts_load_from_file_smcube(const char* path);
@@ -46,4 +31,14 @@ bool smcube_luts_save_to_file_resolve_cube(const char* path, const smcube_luts* 
 const char* smcube_luts_get_title(const smcube_luts* handle);
 const char* smcube_luts_get_comment(const smcube_luts* handle);
 size_t smcube_luts_get_count(const smcube_luts* handle);
-smcube_lut smcube_luts_get_lut(const smcube_luts* handle, size_t index);
+
+int smcube_luts_get_lut_channels(const smcube_luts* handle, size_t index);
+int smcube_luts_get_lut_dimension(const smcube_luts* handle, size_t index);
+smcube_data_type smcube_luts_get_lut_data_type(const smcube_luts* handle, size_t index);
+int smcube_luts_get_lut_size_x(const smcube_luts* handle, size_t index);
+int smcube_luts_get_lut_size_y(const smcube_luts* handle, size_t index);
+int smcube_luts_get_lut_size_z(const smcube_luts* handle, size_t index);
+const void* smcube_luts_get_lut_data(const smcube_luts* handle, size_t index);
+
+size_t smcube_lut_get_data_size(const smcube_luts* handle, size_t index);
+size_t smcube_data_type_get_size(smcube_data_type type);

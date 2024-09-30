@@ -2,30 +2,15 @@
 
 #include "../libs/argh/argh.h"
 
-/*
-stm_setup();
-{"../../../tests/luts/synthetic/shaper_3d.cube", 3},
-{"../../../tests/luts/blender/AgX_Base_sRGB.cube", 3},
-{"../../../tests/luts/blender/Inverse_AgX_Base_Rec2020.cube", 3},
-{"../../../tests/luts/blender/pbrNeutral.cube", 3},
-{"../../../tests/luts/davinci/DCI-P3 Kodak 2383 D65.cube", 3},
-{"../../../tests/luts/davinci/Gamma 2.4 to HDR 1000 nits.cube", 3},
-{"../../../tests/luts/davinci/LMT ACES v0.1.1.cube", 3},
-{"../../../tests/luts/tinyglade/Bluecine_75.cube", 3},
-{"../../../tests/luts/tinyglade/Cold_Ice.cube", 3},
-{"../../../tests/luts/tinyglade/LUNA_COLOR.cube", 3},
-{"../../../tests/luts/tinyglade/Sam_Kolder.cube", 3},
-*/
-
-static bool are_luts_equal(const smcube_lut& la, const smcube_lut& lb)
+static bool are_luts_equal(const smcube_luts* ha, size_t ia, const smcube_luts* hb, size_t ib)
 {
-	if (la.channels != lb.channels) return false;
-	if (la.dimension != lb.dimension) return false;
-	if (la.data_type != lb.data_type) return false;
-	if (la.size_x != lb.size_x) return false;
-	if (la.size_y != lb.size_y) return false;
-	if (la.size_z != lb.size_z) return false;
-	if (memcmp(la.data, lb.data, smcube_lut_get_data_size(la)) != 0) return false;
+	if (smcube_luts_get_lut_channels(ha, ia) != smcube_luts_get_lut_channels(hb, ib)) return false;
+	if (smcube_luts_get_lut_dimension(ha, ia) != smcube_luts_get_lut_dimension(hb, ib)) return false;
+	if (smcube_luts_get_lut_data_type(ha, ia) != smcube_luts_get_lut_data_type(hb, ib)) return false;
+	if (smcube_luts_get_lut_size_x(ha, ia) != smcube_luts_get_lut_size_x(hb, ib)) return false;
+	if (smcube_luts_get_lut_size_y(ha, ia) != smcube_luts_get_lut_size_y(hb, ib)) return false;
+	if (smcube_luts_get_lut_size_z(ha, ia) != smcube_luts_get_lut_size_z(hb, ib)) return false;
+	if (memcmp(smcube_luts_get_lut_data(ha, ia), smcube_luts_get_lut_data(hb, ib), smcube_lut_get_data_size(ha, ia)) != 0) return false;
 	return true;
 }
 
@@ -80,11 +65,14 @@ int main(int argc, const char** argv)
 				printf("- Comment '%s'\n", input_comment);
 			for (size_t lut_idx = 0; lut_idx < smcube_luts_get_count(input_luts); ++lut_idx)
 			{
-				smcube_lut lut = smcube_luts_get_lut(input_luts, lut_idx);
-				switch (lut.dimension) {
-				case 1: printf("- 1D LUT: %i\n", lut.size_x); break;
-				case 2: printf("- 2D LUT: %ix%i\n", lut.size_x, lut.size_y); break;
-				case 3: printf("- 3D LUT: %ix%ix%i\n", lut.size_x, lut.size_y, lut.size_z); break;
+				const int dim = smcube_luts_get_lut_dimension(input_luts, lut_idx);
+				const int sizex = smcube_luts_get_lut_size_x(input_luts, lut_idx);
+				const int sizey = smcube_luts_get_lut_size_y(input_luts, lut_idx);
+				const int sizez = smcube_luts_get_lut_size_z(input_luts, lut_idx);
+				switch (dim) {
+				case 1: printf("- 1D LUT: %i\n", sizex); break;
+				case 2: printf("- 2D LUT: %ix%i\n", sizex, sizey); break;
+				case 3: printf("- 3D LUT: %ix%ix%i\n", sizex, sizey, sizez); break;
 				}
 			}
 		}
@@ -140,9 +128,7 @@ int main(int argc, const char** argv)
 				{
 					for (size_t lut_idx = 0; lut_idx < input_lut_count; ++lut_idx)
 					{
-						smcube_lut la = smcube_luts_get_lut(input_luts, lut_idx);
-						smcube_lut lb = smcube_luts_get_lut(rtrip_luts, lut_idx);
-						if (!are_luts_equal(la, lb))
+						if (!are_luts_equal(input_luts, lut_idx, rtrip_luts, lut_idx))
 						{
 							printf("ERROR: smcube file '%s' LUT #%zi not same as input\n", output_file.c_str(), lut_idx);
 							exit_code = 1;

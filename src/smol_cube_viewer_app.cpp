@@ -161,42 +161,48 @@ static sg_image load_lut(const char* path, float& lut_size)
 
 	for (size_t li = 0, ln = smcube_luts_get_count(luts); li != ln; ++li)
 	{
-		smcube_lut lut = smcube_luts_get_lut(luts, li);
-		if (lut.dimension != 3)
-			continue;
-		if (lut.channels != 3 && lut.channels != 4)
-			continue;
+		const int dim = smcube_luts_get_lut_dimension(luts, li);
+		const int channels = smcube_luts_get_lut_channels(luts, li);
+		smcube_data_type data_type = smcube_luts_get_lut_data_type(luts, li);
+		const int sizex = smcube_luts_get_lut_size_x(luts, li);
+		const int sizey = smcube_luts_get_lut_size_y(luts, li);
+		const int sizez = smcube_luts_get_lut_size_z(luts, li);
+		const void* in_data = smcube_luts_get_lut_data(luts, li);
 
-		if (lut.data_type != smcube_data_type::Float32 && lut.data_type != smcube_data_type::Float16)
+		if (dim != 3)
+			continue;
+		if (channels != 3 && channels != 4)
+			continue;
+		if (data_type != smcube_data_type::Float32 && data_type != smcube_data_type::Float16)
 			continue;
 
 		sg_image_desc desc = {};
 		desc.type = SG_IMAGETYPE_3D;
-		desc.width = lut.size_x;
-		desc.height = lut.size_y;
-		desc.num_slices = lut.size_z;
-		desc.pixel_format = lut.data_type == smcube_data_type::Float32 ? SG_PIXELFORMAT_RGBA32F : SG_PIXELFORMAT_RGBA16F;
+		desc.width = sizex;
+		desc.height = sizey;
+		desc.num_slices = sizez;
+		desc.pixel_format = data_type == smcube_data_type::Float32 ? SG_PIXELFORMAT_RGBA32F : SG_PIXELFORMAT_RGBA16F;
 		desc.usage = SG_USAGE_IMMUTABLE;
 
 		float* rgba32 = nullptr;
 		uint16_t* rgba16 = nullptr;
-		if (lut.data_type == smcube_data_type::Float32)
+		if (data_type == smcube_data_type::Float32)
 		{
 			desc.pixel_format = SG_PIXELFORMAT_RGBA32F;
-			desc.data.subimage[0][0].size = lut.size_x * lut.size_y * lut.size_z * 4 * sizeof(float);
+			desc.data.subimage[0][0].size = sizex * sizey * sizez * 4 * sizeof(float);
 
-			if (lut.channels == 4)
+			if (channels == 4)
 			{
-				desc.data.subimage[0][0].ptr = lut.data;
+				desc.data.subimage[0][0].ptr = in_data;
 			}
 			else
 			{
-				const float* src_rgb = (const float*)lut.data;
-				rgba32 = new float[lut.size_x * lut.size_y * lut.size_z * 4];
+				const float* src_rgb = (const float*)in_data;
+				rgba32 = new float[sizex * sizey * sizez * 4];
 				size_t idx = 0;
-				for (int iz = 0; iz < lut.size_z; ++iz) {
-					for (int iy = 0; iy < lut.size_y; ++iy) {
-						for (int ix = 0; ix < lut.size_x; ++ix) {
+				for (int iz = 0; iz < sizez; ++iz) {
+					for (int iy = 0; iy < sizey; ++iy) {
+						for (int ix = 0; ix < sizex; ++ix) {
 							rgba32[idx * 4 + 0] = src_rgb[idx * 3 + 0];
 							rgba32[idx * 4 + 1] = src_rgb[idx * 3 + 1];
 							rgba32[idx * 4 + 2] = src_rgb[idx * 3 + 2];
@@ -208,22 +214,22 @@ static sg_image load_lut(const char* path, float& lut_size)
 				desc.data.subimage[0][0].ptr = rgba32;
 			}
 		}
-		else if (lut.data_type == smcube_data_type::Float16)
+		else if (data_type == smcube_data_type::Float16)
 		{
 			desc.pixel_format = SG_PIXELFORMAT_RGBA16F;
-			desc.data.subimage[0][0].size = lut.size_x * lut.size_y * lut.size_z * 4 * sizeof(uint16_t);
-			if (lut.channels == 4)
+			desc.data.subimage[0][0].size = sizex * sizey * sizez * 4 * sizeof(uint16_t);
+			if (channels == 4)
 			{
-				desc.data.subimage[0][0].ptr = lut.data;
+				desc.data.subimage[0][0].ptr = in_data;
 			}
 			else
 			{
-				const uint16_t* src_rgb = (const uint16_t*)lut.data;
-				rgba16 = new uint16_t[lut.size_x * lut.size_y * lut.size_z * 4];
+				const uint16_t* src_rgb = (const uint16_t*)in_data;
+				rgba16 = new uint16_t[sizex * sizey * sizez * 4];
 				size_t idx = 0;
-				for (int iz = 0; iz < lut.size_z; ++iz) {
-					for (int iy = 0; iy < lut.size_y; ++iy) {
-						for (int ix = 0; ix < lut.size_x; ++ix) {
+				for (int iz = 0; iz < sizez; ++iz) {
+					for (int iy = 0; iy < sizey; ++iy) {
+						for (int ix = 0; ix < sizex; ++ix) {
 							rgba16[idx * 4 + 0] = src_rgb[idx * 3 + 0];
 							rgba16[idx * 4 + 1] = src_rgb[idx * 3 + 1];
 							rgba16[idx * 4 + 2] = src_rgb[idx * 3 + 2];
@@ -237,13 +243,13 @@ static sg_image load_lut(const char* path, float& lut_size)
 		}
 
 		tex = sg_make_image(&desc);
-		lut_size = float(lut.size_x);
+		lut_size = float(sizex);
 		delete[] rgba32;
 		delete[] rgba16;
 
 		uint64_t t1 = stm_now();
 		s_cur_lut_load_time = float(stm_ms(stm_diff(t1, t0)));
-		s_cur_lut_size = lut.size_x;
+		s_cur_lut_size = sizex;
 
 		const char* fnamepos = strrchr(path, '/');
 		if (fnamepos == nullptr)
