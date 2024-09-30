@@ -4,13 +4,13 @@
 
 static bool are_luts_equal(const smcube_luts* ha, size_t ia, const smcube_luts* hb, size_t ib)
 {
-	if (smcube_luts_get_lut_channels(ha, ia) != smcube_luts_get_lut_channels(hb, ib)) return false;
-	if (smcube_luts_get_lut_dimension(ha, ia) != smcube_luts_get_lut_dimension(hb, ib)) return false;
-	if (smcube_luts_get_lut_data_type(ha, ia) != smcube_luts_get_lut_data_type(hb, ib)) return false;
-	if (smcube_luts_get_lut_size_x(ha, ia) != smcube_luts_get_lut_size_x(hb, ib)) return false;
-	if (smcube_luts_get_lut_size_y(ha, ia) != smcube_luts_get_lut_size_y(hb, ib)) return false;
-	if (smcube_luts_get_lut_size_z(ha, ia) != smcube_luts_get_lut_size_z(hb, ib)) return false;
-	if (memcmp(smcube_luts_get_lut_data(ha, ia), smcube_luts_get_lut_data(hb, ib), smcube_lut_get_data_size(ha, ia)) != 0) return false;
+	if (smcube_lut_get_channels(ha, ia) != smcube_lut_get_channels(hb, ib)) return false;
+	if (smcube_lut_get_dimension(ha, ia) != smcube_lut_get_dimension(hb, ib)) return false;
+	if (smcube_lut_get_data_type(ha, ia) != smcube_lut_get_data_type(hb, ib)) return false;
+	if (smcube_lut_get_size_x(ha, ia) != smcube_lut_get_size_x(hb, ib)) return false;
+	if (smcube_lut_get_size_y(ha, ia) != smcube_lut_get_size_y(hb, ib)) return false;
+	if (smcube_lut_get_size_z(ha, ia) != smcube_lut_get_size_z(hb, ib)) return false;
+	if (memcmp(smcube_lut_get_data(ha, ia), smcube_lut_get_data(hb, ib), smcube_lut_get_data_size(ha, ia)) != 0) return false;
 	return true;
 }
 
@@ -47,7 +47,7 @@ int main(int argc, const char** argv)
 	{
 		// read input file
 		const std::string& input_file = input_files[idx];
-		smcube_luts* input_luts = smcube_luts_load_from_file_resolve_cube(input_file.c_str());
+		smcube_luts* input_luts = smcube_load_from_file_resolve_cube(input_file.c_str());
 		if (input_luts == nullptr)
 		{
 			printf("ERROR: failed to parse input file '%s'\n", input_file.c_str());
@@ -56,19 +56,19 @@ int main(int argc, const char** argv)
 		}
 		if (verbose)
 		{
-			printf("Input file %s: %zi luts\n", input_file.c_str(), smcube_luts_get_count(input_luts));
-			const char* input_title = smcube_luts_get_title(input_luts);
+			printf("Input file %s: %zi luts\n", input_file.c_str(), smcube_get_count(input_luts));
+			const char* input_title = smcube_get_title(input_luts);
 			if (input_title != nullptr && input_title[0])
 				printf("- Title '%s'\n", input_title);
-			const char* input_comment = smcube_luts_get_comment(input_luts);
+			const char* input_comment = smcube_get_comment(input_luts);
 			if (input_comment != nullptr && input_comment[0])
 				printf("- Comment '%s'\n", input_comment);
-			for (size_t lut_idx = 0; lut_idx < smcube_luts_get_count(input_luts); ++lut_idx)
+			for (size_t lut_idx = 0; lut_idx < smcube_get_count(input_luts); ++lut_idx)
 			{
-				const int dim = smcube_luts_get_lut_dimension(input_luts, lut_idx);
-				const int sizex = smcube_luts_get_lut_size_x(input_luts, lut_idx);
-				const int sizey = smcube_luts_get_lut_size_y(input_luts, lut_idx);
-				const int sizez = smcube_luts_get_lut_size_z(input_luts, lut_idx);
+				const int dim = smcube_lut_get_dimension(input_luts, lut_idx);
+				const int sizex = smcube_lut_get_size_x(input_luts, lut_idx);
+				const int sizey = smcube_lut_get_size_y(input_luts, lut_idx);
+				const int sizez = smcube_lut_get_size_z(input_luts, lut_idx);
 				switch (dim) {
 				case 1: printf("- 1D LUT: %i\n", sizex); break;
 				case 2: printf("- 2D LUT: %ix%i\n", sizex, sizey); break;
@@ -83,7 +83,7 @@ int main(int argc, const char** argv)
 		{
 			printf("ERROR: input file '%s' has no extension\n", input_file.c_str());
 			exit_code = 1;
-			smcube_luts_free(input_luts);
+			smcube_free(input_luts);
 			continue;
 		}
 		std::string output_file = input_file.substr(0, last_dot_pos);
@@ -98,18 +98,18 @@ int main(int argc, const char** argv)
 			printf("- Output file '%s'\n", output_file.c_str());
 		}
 
-		if (!smcube_luts_save_to_file_smcube(output_file.c_str(), input_luts, smcube_save_flags(save_flags)))
+		if (!smcube_save_to_file_smcube(output_file.c_str(), input_luts, smcube_save_flags(save_flags)))
 		{
 			printf("ERROR: failed to write output file '%s'\n", output_file.c_str());
 			exit_code = 1;
-			smcube_luts_free(input_luts);
+			smcube_free(input_luts);
 			continue;
 		}
 
 		// read the written smol-cube file
 		if (roundtrip)
 		{
-			smcube_luts* rtrip_luts = smcube_luts_load_from_file_smcube(output_file.c_str());
+			smcube_luts* rtrip_luts = smcube_load_from_file_smcube(output_file.c_str());
 			if (rtrip_luts == nullptr)
 			{
 				printf("ERROR: failed to read written smcube file '%s'\n", output_file.c_str());
@@ -117,8 +117,8 @@ int main(int argc, const char** argv)
 			}
 			else
 			{
-				size_t input_lut_count = smcube_luts_get_count(input_luts);
-				size_t rtrip_lut_count = smcube_luts_get_count(rtrip_luts);
+				size_t input_lut_count = smcube_get_count(input_luts);
+				size_t rtrip_lut_count = smcube_get_count(rtrip_luts);
 				if (input_lut_count != rtrip_lut_count)
 				{
 					printf("ERROR: smcube file '%s' has LUT count %zi, input had LUT count %zi\n", output_file.c_str(), rtrip_lut_count, input_lut_count);
@@ -140,12 +140,12 @@ int main(int argc, const char** argv)
 				{
 					printf("- Output roundtrip file '%s'\n", output_file.c_str());
 				}
-				smcube_luts_save_to_file_resolve_cube(output_file.c_str(), rtrip_luts);
+				smcube_save_to_file_resolve_cube(output_file.c_str(), rtrip_luts);
 			}
-			smcube_luts_free(rtrip_luts);
+			smcube_free(rtrip_luts);
 		}
 
-		smcube_luts_free(input_luts);
+		smcube_free(input_luts);
 	}
 	return exit_code;
 }

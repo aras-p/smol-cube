@@ -155,19 +155,19 @@ static sg_image load_lut(const char* path, float& lut_size)
 	sg_image tex = {};
 
 	uint64_t t0 = stm_now();
-	smcube_luts* luts = smcube_luts_load_from_file(path);
+	smcube_luts* luts = smcube_load_from_file(path);
 	if (luts == nullptr)
 		return tex;
 
-	for (size_t li = 0, ln = smcube_luts_get_count(luts); li != ln; ++li)
+	for (size_t li = 0, ln = smcube_get_count(luts); li != ln; ++li)
 	{
-		const int dim = smcube_luts_get_lut_dimension(luts, li);
-		const int channels = smcube_luts_get_lut_channels(luts, li);
-		smcube_data_type data_type = smcube_luts_get_lut_data_type(luts, li);
-		const int sizex = smcube_luts_get_lut_size_x(luts, li);
-		const int sizey = smcube_luts_get_lut_size_y(luts, li);
-		const int sizez = smcube_luts_get_lut_size_z(luts, li);
-		const void* in_data = smcube_luts_get_lut_data(luts, li);
+		const int dim = smcube_lut_get_dimension(luts, li);
+		const int channels = smcube_lut_get_channels(luts, li);
+		smcube_data_type data_type = smcube_lut_get_data_type(luts, li);
+		const int sizex = smcube_lut_get_size_x(luts, li);
+		const int sizey = smcube_lut_get_size_y(luts, li);
+		const int sizez = smcube_lut_get_size_z(luts, li);
+		const void* in_data = smcube_lut_get_data(luts, li);
 
 		if (dim != 3)
 			continue;
@@ -259,7 +259,7 @@ static sg_image load_lut(const char* path, float& lut_size)
 		s_cur_lut_title = fnamepos;
 		break;
 	}
-	smcube_luts_free(luts);
+	smcube_free(luts);
 
 	return tex;
 }

@@ -52,10 +52,10 @@ format. (the times are for loading the file *and* creating a GPU 3D texture with
 
 The library itself is written in C++, and requires C++ 17 or later. It provides functions for:
 
-- Loading LUT(s) from `.cube` or `.smcube` files: `smcube_luts_load_from_file`.
-- Saving LUT(s) into `.smcube` file: `smcube_luts_save_to_file_smcube`. This can convert the float32 data down into float16,
+- Loading LUT(s) from `.cube` or `.smcube` files: `smcube_load_from_file`.
+- Saving LUT(s) into `.smcube` file: `smcube_save_to_file_smcube`. This can convert the float32 data down into float16,
   and can also expand from RGB to four-channel RGBX.
-- Saving LUT(s) into `.cube` file: `smcube_luts_save_to_file_resolve_cube`. Note that this is limited to what Resolve .cube format
+- Saving LUT(s) into `.cube` file: `smcube_save_to_file_resolve_cube`. Note that this is limited to what Resolve .cube format
   can do, i.e. only 32 bit float data, only 3 channels, and the file can contain one 1D LUT, one 3D LUT, or one 1D + one 3D LUT only.
 - Access and inspection of the loaded LUT data.
 

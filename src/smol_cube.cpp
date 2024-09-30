@@ -540,7 +540,7 @@ struct smcube_luts
     std::vector<smcube_lut> luts;
 };
 
-bool smcube_luts_save_to_file_smcube(const char* path, const smcube_luts* luts, smcube_save_flags flags)
+bool smcube_save_to_file_smcube(const char* path, const smcube_luts* luts, smcube_save_flags flags)
 {
     if (path == nullptr || luts == nullptr)
         return false;
@@ -634,71 +634,71 @@ bool smcube_luts_save_to_file_smcube(const char* path, const smcube_luts* luts, 
     return true;
 }
 
-const char* smcube_luts_get_title(const smcube_luts* handle)
+const char* smcube_get_title(const smcube_luts* handle)
 {
     if (handle == nullptr)
         return "";
     return handle->title.c_str();
 }
 
-const char* smcube_luts_get_comment(const smcube_luts* handle)
+const char* smcube_get_comment(const smcube_luts* handle)
 {
     if (handle == nullptr)
         return "";
     return handle->comment.c_str();
 }
 
-size_t smcube_luts_get_count(const smcube_luts* handle)
+size_t smcube_get_count(const smcube_luts* handle)
 {
     if (handle == nullptr)
         return 0;
     return handle->luts.size();
 }
 
-smcube_lut smcube_luts_get_lut(const smcube_luts* handle, size_t index)
+smcube_lut smcube_get_lut(const smcube_luts* handle, size_t index)
 {
     if (handle == nullptr || index >= handle->luts.size())
         return smcube_lut();
     return handle->luts[index];
 }
 
-int smcube_luts_get_lut_channels(const smcube_luts* handle, size_t index)
+int smcube_lut_get_channels(const smcube_luts* handle, size_t index)
 {
     if (handle == nullptr || index >= handle->luts.size())
         return 0;
     return handle->luts[index].channels;
 }
-int smcube_luts_get_lut_dimension(const smcube_luts* handle, size_t index)
+int smcube_lut_get_dimension(const smcube_luts* handle, size_t index)
 {
     if (handle == nullptr || index >= handle->luts.size())
         return 0;
     return handle->luts[index].dimension;
 }
-smcube_data_type smcube_luts_get_lut_data_type(const smcube_luts* handle, size_t index)
+smcube_data_type smcube_lut_get_data_type(const smcube_luts* handle, size_t index)
 {
     if (handle == nullptr || index >= handle->luts.size())
         return smcube_data_type::Float32;
     return handle->luts[index].data_type;
 }
-int smcube_luts_get_lut_size_x(const smcube_luts* handle, size_t index)
+int smcube_lut_get_size_x(const smcube_luts* handle, size_t index)
 {
     if (handle == nullptr || index >= handle->luts.size())
         return 0;
     return handle->luts[index].size_x;
 }
-int smcube_luts_get_lut_size_y(const smcube_luts* handle, size_t index)
+int smcube_lut_get_size_y(const smcube_luts* handle, size_t index)
 {
     if (handle == nullptr || index >= handle->luts.size())
         return 0;
     return handle->luts[index].size_y;
 }
-int smcube_luts_get_lut_size_z(const smcube_luts* handle, size_t index)
+int smcube_lut_get_size_z(const smcube_luts* handle, size_t index)
 {
     if (handle == nullptr || index >= handle->luts.size())
         return 0;
     return handle->luts[index].size_z;
 }
-const void* smcube_luts_get_lut_data(const smcube_luts* handle, size_t index)
+const void* smcube_lut_get_data(const smcube_luts* handle, size_t index)
 {
     if (handle == nullptr || index >= handle->luts.size())
         return 0;
@@ -731,16 +731,16 @@ static bool str_ends_with(const char* str, const char* suffix)
     return memcmp(str + str_len - suffix_len, suffix, suffix_len) == 0;
 }
 
-smcube_luts* smcube_luts_load_from_file(const char* path)
+smcube_luts* smcube_load_from_file(const char* path)
 {
     if (str_ends_with(path, ".cube"))
-        return smcube_luts_load_from_file_resolve_cube(path);
+        return smcube_load_from_file_resolve_cube(path);
     if (str_ends_with(path, ".smcube"))
-        return smcube_luts_load_from_file_smcube(path);
+        return smcube_load_from_file_smcube(path);
     return nullptr;
 }
 
-smcube_luts* smcube_luts_load_from_file_smcube(const char* path)
+smcube_luts* smcube_load_from_file_smcube(const char* path)
 {
     if (path == nullptr)
         return nullptr;
@@ -766,7 +766,7 @@ smcube_luts* smcube_luts_load_from_file_smcube(const char* path)
 
     if (memcmp(luts->file_data, "SML1", 4) != 0)
     {
-        smcube_luts_free(luts);
+        smcube_free(luts);
         return nullptr;
     }
     // parse chunks
@@ -778,7 +778,7 @@ smcube_luts* smcube_luts_load_from_file_smcube(const char* path)
         memcpy(&chunk_len, luts->file_data + offset + 4, 8);
         if (offset + 12 + chunk_len > luts->file_data_size)
         {
-            smcube_luts_free(luts);
+            smcube_free(luts);
             return nullptr;
         }
         if (memcmp(luts->file_data + offset, "Titl", 4) == 0 && chunk_len > 0)
@@ -803,7 +803,7 @@ smcube_luts* smcube_luts_load_from_file_smcube(const char* path)
                 head.filter >= uint32_t(smcube_data_filter::FilterCount) ||
                 head.size_x > 65536 || head.size_y > 65536 || head.size_z > 65536)
             {
-                smcube_luts_free(luts);
+                smcube_free(luts);
                 return nullptr;
             }
 
@@ -817,7 +817,7 @@ smcube_luts* smcube_luts_load_from_file_smcube(const char* path)
             size_t lut_data_size = lut_get_data_size(lut);
             if (chunk_len - sizeof(smcube_file_alut_header) != lut_data_size)
             {
-                smcube_luts_free(luts);
+                smcube_free(luts);
                 return nullptr;
             }
 
@@ -844,7 +844,7 @@ smcube_luts* smcube_luts_load_from_file_smcube(const char* path)
     return luts;
 }
 
-void smcube_luts_free(smcube_luts* handle)
+void smcube_free(smcube_luts* handle)
 {
     if (handle)
         delete[] handle->file_data;
@@ -900,7 +900,7 @@ static const char* parse_floats(const char* p, const char* end, float fallback, 
 // Resolve .cube file format notes:
 // https://resolve.cafe/developers/luts/
 
-smcube_luts* smcube_luts_load_from_file_resolve_cube(const char* path)
+smcube_luts* smcube_load_from_file_resolve_cube(const char* path)
 {
     if (path == nullptr)
         return nullptr;
@@ -1010,7 +1010,7 @@ smcube_luts* smcube_luts_load_from_file_resolve_cube(const char* path)
             else
             {
                 fclose(f);
-                smcube_luts_free(luts);
+                smcube_free(luts);
                 return nullptr;
             }
         }
@@ -1025,7 +1025,7 @@ smcube_luts* smcube_luts_load_from_file_resolve_cube(const char* path)
 
     if (dim_1d > 0 && read_1d != dim_1d || dim_3d > 0 && read_3d != dim_3d * dim_3d * dim_3d)
     {
-        smcube_luts_free(luts);
+        smcube_free(luts);
         return nullptr;
     }
     return luts;
@@ -1040,7 +1040,7 @@ static bool is_lut_supported_by_resolve_cube(const smcube_lut& lut)
     return true;
 }
 
-bool smcube_luts_save_to_file_resolve_cube(const char* path, const smcube_luts* luts)
+bool smcube_save_to_file_resolve_cube(const char* path, const smcube_luts* luts)
 {
     // argument checks
     if (path == nullptr || luts == nullptr || luts->luts.empty())
