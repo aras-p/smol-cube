@@ -3,6 +3,7 @@
 
 #include "smol_cube.h"
 #include <string>
+#include <vector>
 #include <filesystem>
 #include <algorithm>
 

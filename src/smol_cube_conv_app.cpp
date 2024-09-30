@@ -4,6 +4,8 @@
 #include "smol_cube.h"
 
 #include "../libs/argh/argh.h"
+#include <string.h>
+#include <math.h>
 
 static bool are_luts_equal(const smcube_luts* ha, size_t ia, const smcube_luts* hb, size_t ib)
 {
