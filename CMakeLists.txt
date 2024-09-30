@@ -26,7 +26,7 @@ target_compile_definitions(smol-cube-conv PRIVATE _CRT_SECURE_NO_DEPRECATE _CRT_
 target_compile_definitions(smol-cube-viewer PRIVATE _CRT_SECURE_NO_DEPRECATE _CRT_NONSTDC_NO_WARNINGS NOMINMAX)
 
 
-if((CMAKE_CXX_COMPILER_ID MATCHES "Clang") AND (CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64"))
+if((CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU") AND (CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64"))
 	target_compile_options(smol-cube-conv PRIVATE -msse4.1)
 	target_compile_options(smol-cube-viewer PRIVATE -msse4.1)
 endif()
