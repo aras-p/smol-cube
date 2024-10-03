@@ -126,4 +126,11 @@ uint32_t size_x;    // LUT X size, at least 1
 uint32_t size_y;    // LUT Y size, at least 1
 uint32_t size_z;    // LUT Z size, at least 1
 ```
-the header is followed by actual LUT data.
+the header is followed by actual LUT data: `channels*size_x*size_y*size_z` floats (`data_type==0`) or half-precision
+floats (`data_type==1`).
+
+The data is in row-major order, i.e. X axis data changes the fastest, and Z axis changes the slowest.
+
+If data is filtered (`filter==1`) to make it more compressible, it needs to be un-filtered after reading,
+and filtered during writing. This does not change the data size, just makes it have more repeated same
+sequences for smoothly varying data.
