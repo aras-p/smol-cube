@@ -95,3 +95,35 @@ Left/Right keys switch between LUTs, Up/Down adjusts LUT application intensity. 
 The viewer assumes that the LUTs are meant for low dynamic range color grading, directly on sRGB color values.
 Some other LUTs might not be meant for that (e.g. Khronos PBR Neutral) and while they will "work", the results
 will not look pleasant.
+
+### .smcube file format
+
+The file starts with 4 bytes containing `S`, `M`, `L`, `1` ASCII characters. What follows is a number of "chunks",
+where each chunk has a 12-byte header followed by chunk data. Unknown chunks can be ignored. Binary numbers in the file
+are little-endian.
+
+Each chunk is:
+```c++
+uint8_t[4]         type;
+uint64_t           data_size;
+uint8_t[data_size] chunk_data;
+```
+
+Chunks read/written by smol-cube currently are:
+
+**Title chunk**: type is `T`, `i`, `t`, `l` ASCII characters. Chunk data is an UTF-8 string: LUT "title".
+
+**Comment chunk**: type is `C`, `o`, `m`, `m` ASCII characters. Chunk data is an UTF-8 string: LUT file "comment".
+
+**LUT chunk**: type is `A`, `L`, `u`, `t` ASCII characters. One chunk represents a single LUT; multiple LUTs can be
+in the same file (typical case: 1D shaper LUT + 3D LUT). LUT chunk data starts with a 28-byte header:
+```c++
+uint32_t channels;  // 3=RGB, 4=RGBA
+uint32_t dimension; // 1=1D, 2=2D, 3=3D
+uint32_t data_type; // 0=Float32, 1=Float16
+uint32_t filter;    // 0=None, 1=ByteDelta
+uint32_t size_x;    // LUT X size, at least 1
+uint32_t size_y;    // LUT Y size, at least 1
+uint32_t size_z;    // LUT Z size, at least 1
+```
+the header is followed by actual LUT data.
