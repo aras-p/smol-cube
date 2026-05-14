@@ -228,7 +228,7 @@ static void float_to_half(const float* src, uint16_t* dst, size_t length)
     {
         __m256 src8 = _mm256_loadu_ps(src);
         __m128i h8 = _mm256_cvtps_ph(src8, _MM_FROUND_TO_NEAREST_INT);
-        _mm_storeu_epi32(dst, h8);
+        _mm_storeu_si128((__m128i *)dst, h8);
         src += 8;
         dst += 8;
     }
@@ -264,7 +264,7 @@ static void half_to_float(const uint16_t* src, float* dst, size_t length)
 #if defined(HALF_USES_X64_F16C_CONVERSION)
     for (; i + 7 < length; i += 8)
     {
-        __m128i src8 = _mm_loadu_epi32(src);
+        __m128i src8 = _mm_loadu_si128((__m128i *)src);
         __m256 f8 = _mm256_cvtph_ps(src8);
         _mm256_storeu_ps(dst, f8);
         src += 8;
